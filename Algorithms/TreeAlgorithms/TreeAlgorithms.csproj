@@ -43,12 +43,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Base\ITreeBase.cs" />
+    <Compile Include="Base\ITreeNode.cs" />
     <Compile Include="Base\NodeBase.cs" />
     <Compile Include="Base\TreeBase.cs" />
     <Compile Include="Concrete\BinaryTree.cs" />
     <Compile Include="Concrete\SimpleIntBinaryTree.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Programs\Bag.cs" />
+    <Compile Include="Programs\BagItem.cs" />
     <Compile Include="Programs\Base\IProgram.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
