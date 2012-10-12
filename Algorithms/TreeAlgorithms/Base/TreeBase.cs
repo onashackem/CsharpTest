@@ -4,18 +4,36 @@ using System.Linq;
 using System.Text;
 namespace TreeAlgorithms.Base
 {
-    abstract class TreeBase <TKey, TValue>
+    abstract class TreeBase <TKey, TValue> : ITree<TKey,TValue>
     {
         /// <summary>
         /// Gets the root of the tree
         /// </summary>
-        public NodeBase<TKey, TValue> Root { get; protected set; }
+        public INodeBase<TKey, TValue> Root { get; protected set; }
 
+        /// <summary>
+        /// Gets depth of a tree
+        /// </summary>
         public int Depth
         {
             get
             {
-                return (Root == null) ? 0 : Root.Depth;
+                return Root == null
+                    ? 0
+                    : CountNodeDepth(Root);
+            }
+        }
+
+        /// <summary>
+        /// Gets total count of nodes in the tree
+        /// </summary>
+        public int NodeCount
+        {
+            get
+            {
+                return Root == null
+                    ? 0
+                    : Dfs<int>((node, x) => x + 1, 1, Base.BfsOrder.POST_ORDER);
             }
         }
 
@@ -23,7 +41,7 @@ namespace TreeAlgorithms.Base
         /// Constructor that initializes root of the tree
         /// </summary>
         /// <param name="root"></param>
-        protected TreeBase(NodeBase<TKey, TValue> root)
+        protected TreeBase(INodeBase<TKey, TValue> root)
         {
             Root = root;
         }
@@ -44,14 +62,14 @@ namespace TreeAlgorithms.Base
         /// The result of a predicate is an result of aggregated operation with supplied node and supplied result.</param>
         /// <param name="initialValue">Initial value for the first predicate operation</param>
         /// <returns>Returns agregated result of DFS</returns>
-        public TResult Bfs<TResult>(Func<NodeBase<TKey, TValue>, TResult, TResult> predicate, TResult initialValue)
+        public TResult Bfs<TResult>(Func<INodeBase<TKey, TValue>, TResult, TResult> predicate, TResult initialValue)
         {
             // Nothing to search in
             if (Root == null)
                 return default(TResult);
 
             // Initialize queue with a
-            LinkedList<NodeBase<TKey, TValue>> queue = new LinkedList<NodeBase<TKey, TValue>>();
+            LinkedList<INodeBase<TKey, TValue>> queue = new LinkedList<INodeBase<TKey, TValue>>();
             queue.AddLast(Root);
             
             // Initial result
@@ -84,19 +102,23 @@ namespace TreeAlgorithms.Base
         /// </summary>
         /// <param name="predicate">Function that accepst Node and result. 
         /// The result of a predicate is an result of aggregated operation with supplied node and supplied result.</param>
-        /// <param name="result">Partial result for the predicate operation</param>
+        /// <param name="initialValue">Partial result for the predicate operation</param>
         /// <returns>Returns agregated result of DFS</returns>
-        public TResult Dfs<TResult>(Func<NodeBase<TKey, TValue>, TResult, TResult> predicate, ref TResult result, BfsOrder order)
+        public TResult Dfs<TResult>(Func<INodeBase<TKey, TValue>, TResult, TResult> predicate, TResult initialValue, BfsOrder order)
         {
+            TResult result = initialValue;
+
             // Nothing to search in
             if (Root == null)
                 return default(TResult);
 
             // Apply recursion from the root
-            return DfsVisitChild(Root, predicate, ref result, order);
+            DfsVisitChild(Root, predicate, ref result, order);
+
+            return result;
         }
 
-        protected TResult DfsVisitChild<TResult>(NodeBase<TKey, TValue> node, Func<NodeBase<TKey, TValue>, TResult, TResult> predicate, ref TResult result, BfsOrder order)
+        protected TResult DfsVisitChild<TResult>(INodeBase<TKey, TValue> node, Func<INodeBase<TKey, TValue>, TResult, TResult> predicate, ref TResult result, BfsOrder order)
         {
 
             // Apply prediace in pre-order
@@ -121,9 +143,26 @@ namespace TreeAlgorithms.Base
             if (order == BfsOrder.POST_ORDER)
                 result = predicate(node, result);
 
-            Console.WriteLine(String.Format("{0}:{1}", node.Value, result));
-
             return result;
+        }
+
+        /// <summary>
+        /// Counts depth from bottom of the current node
+        /// </summary>
+        /// <param name="node">Node to count depth for</param>
+        /// <returns></returns>
+        private int CountNodeDepth(INodeBase<TKey, TValue> node)
+        {
+            var maxDepth = 0;
+            foreach (var child in node.Children)
+            {
+                var depth = child == null ? 0 : CountNodeDepth(child);
+
+                if (depth > maxDepth)
+                    maxDepth = depth;
+            }
+
+            return ++maxDepth;
         }
     }
 

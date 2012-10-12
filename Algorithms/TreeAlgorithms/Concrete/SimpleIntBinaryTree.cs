@@ -31,11 +31,9 @@ namespace TreeAlgorithms.Concrete
         {
             get
             {
-                int result = Root.Value;
-
                 return Root == null 
                     ? -1 
-                    : Dfs<int>((node, min) => (node.Value < min) ? node.Value : min, ref result, Base.BfsOrder.IN_ORDER);
+                    : Dfs<int>((node, min) => (node.Value < min) ? node.Value : min, Root.Value, Base.BfsOrder.IN_ORDER);
             }
         }
 
@@ -43,11 +41,9 @@ namespace TreeAlgorithms.Concrete
         {
             get
             {
-                int result = Root.Value;
-
                 return Root == null 
-                    ? -1 
-                    : Dfs<int>((node, min) => (node.Value < min) ? node.Value : min, ref result, Base.BfsOrder.PRE_ORDER);
+                    ? -1
+                    : Dfs<int>((node, min) => (node.Value < min) ? node.Value : min, Root.Value, Base.BfsOrder.PRE_ORDER);
             }
         }
 
@@ -55,11 +51,9 @@ namespace TreeAlgorithms.Concrete
         {
             get
             {
-                int result = Root.Value;
-
                 return Root == null 
-                    ? -1 
-                    : Dfs<int>((node, min) => (node.Value < min) ? node.Value : min, ref result, Base.BfsOrder.POST_ORDER);
+                    ? -1
+                    : Dfs<int>((node, min) => (node.Value < min) ? node.Value : min, Root.Value, Base.BfsOrder.POST_ORDER);
             }
         }
 

@@ -5,7 +5,7 @@ using System.Text;
 
 namespace TreeAlgorithms.Base
 {
-    abstract class NodeBase <TKey, TValue>
+    abstract class NodeBase <TKey, TValue> : TreeAlgorithms.Base.INodeBase<TKey,TValue>
     {
         /// <summary>
         /// Gets the key of the node
@@ -20,12 +20,12 @@ namespace TreeAlgorithms.Base
         /// <summary>
         /// Gets the parent node of this node
         /// </summary>
-        public NodeBase<TKey, TValue> Parent { get; protected set; }
+        public INodeBase<TKey, TValue> Parent { get; protected set; }
 
         /// <summary>
         /// Gets the array of children nodes of thos node
         /// </summary>
-        public NodeBase<TKey, TValue>[] Children { get; protected set; }
+        public INodeBase<TKey, TValue>[] Children { get; protected set; }
 
         /// <summary>
         /// Gets total count of children
@@ -35,7 +35,7 @@ namespace TreeAlgorithms.Base
         /// <summary>
         /// Gets the most left child
         /// </summary>
-        public NodeBase<TKey, TValue> TopLeftChild
+        public INodeBase<TKey, TValue> TopLeftChild
         {
             get
             {
@@ -51,7 +51,7 @@ namespace TreeAlgorithms.Base
         /// <summary>
         /// Gets the most right child
         /// </summary>
-        public NodeBase<TKey, TValue> TopRightChild
+        public INodeBase<TKey, TValue> TopRightChild
         {
             get
             {
@@ -63,17 +63,6 @@ namespace TreeAlgorithms.Base
                 AddChildAtIndex(value, ChildrenCount - 1);
             }
         }
-
-        /// <summary>
-        /// Gets the depth of this node
-        /// </summary>
-        public int Depth
-        {
-            get
-            {
-                return Children.Max(child => (child == null) ? 0 : child.Depth) + 1;
-            }
-        }
         
         /// <summary>
         /// Contructor that inits the Children, Parent, Key and Value properties
@@ -82,14 +71,14 @@ namespace TreeAlgorithms.Base
         /// <param name="key">Key of the node</param>
         /// <param name="value">Value of the node</param>
         /// <param name="childCoutn">Size of children array</param>
-        protected NodeBase(NodeBase<TKey, TValue> parent, TKey key, TValue value, int childCount)
+        protected NodeBase(INodeBase<TKey, TValue> parent, TKey key, TValue value, int childCount)
         {
             // Set properties
             Parent = parent;
             Key = key;
             Value = value;
             ChildrenCount = childCount;
-            Children = new NodeBase<TKey, TValue>[ChildrenCount];
+            Children = new INodeBase<TKey, TValue>[ChildrenCount];
         }
 
         /// <summary>
@@ -99,7 +88,7 @@ namespace TreeAlgorithms.Base
         /// <param name="index">Index to add chaild at</param>
         /// <param name="overwrite">If set to true, exisiting child is killed</param>
         /// <returns>Returns true if child added, false otherwise</returns>
-        public bool AddChild(NodeBase<TKey, TValue> child, int index, bool overwrite = false)
+        public bool AddChild(INodeBase<TKey, TValue> child, int index, bool overwrite = false)
         {
             if (ValidateChildIndex(index))
             {
@@ -121,7 +110,7 @@ namespace TreeAlgorithms.Base
         /// </summary>
         /// <param name="index"></param>
         /// <returns></returns>
-        public NodeBase<TKey, TValue> GetChildAt(int index)
+        public INodeBase<TKey, TValue> GetChildAt(int index)
         {
             if (ValidateChildIndex(index))
             {
@@ -135,7 +124,7 @@ namespace TreeAlgorithms.Base
         /// Sets parent to this node
         /// </summary>
         /// <param name="parent"></param>
-        public void SetParent(NodeBase<TKey, TValue> parent)
+        public void SetParent(INodeBase<TKey, TValue> parent)
         {
             Parent = parent;
         }
@@ -158,10 +147,10 @@ namespace TreeAlgorithms.Base
         /// </summary>
         /// <param name="child">Child to add</param>
         /// <param name="index">Index to add child at</param>
-        protected void AddChildAtIndex(NodeBase<TKey, TValue> child, int index)
+        protected void AddChildAtIndex(INodeBase<TKey, TValue> child, int index)
         {
             Children[index] = child;
-            child.Parent = this;
+            child.SetParent(this);
         }
     }
 }
