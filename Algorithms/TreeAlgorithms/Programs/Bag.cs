@@ -41,7 +41,7 @@ namespace TreeAlgorithms.Programs
                         Console.Write(bag[i].Name + " ");
                 }
 
-                Console.WriteLine(); 
+                Console.WriteLine();
             }
         }
 

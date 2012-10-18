@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TreeAlgorithms", "TreeAlgorithms\TreeAlgorithms.csproj", "{A176B633-ADEE-4929-B5C2-5557D96863CF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordWrap", "WordWrap\WordWrap.csproj", "{AAA5A88C-0595-44F4-B285-34E1DEEE1675}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HashAlgorithms", "HashAlgorithms\HashAlgorithms.csproj", "{104AF87A-6BB6-4166-98E1-375206E8CA07}"
 EndProject
 Global
@@ -17,10 +15,6 @@ Global
 		{A176B633-ADEE-4929-B5C2-5557D96863CF}.Debug|x86.Build.0 = Debug|x86
 		{A176B633-ADEE-4929-B5C2-5557D96863CF}.Release|x86.ActiveCfg = Release|x86
 		{A176B633-ADEE-4929-B5C2-5557D96863CF}.Release|x86.Build.0 = Release|x86
-		{AAA5A88C-0595-44F4-B285-34E1DEEE1675}.Debug|x86.ActiveCfg = Debug|x86
-		{AAA5A88C-0595-44F4-B285-34E1DEEE1675}.Debug|x86.Build.0 = Debug|x86
-		{AAA5A88C-0595-44F4-B285-34E1DEEE1675}.Release|x86.ActiveCfg = Release|x86
-		{AAA5A88C-0595-44F4-B285-34E1DEEE1675}.Release|x86.Build.0 = Release|x86
 		{104AF87A-6BB6-4166-98E1-375206E8CA07}.Debug|x86.ActiveCfg = Debug|x86
 		{104AF87A-6BB6-4166-98E1-375206E8CA07}.Debug|x86.Build.0 = Debug|x86
 		{104AF87A-6BB6-4166-98E1-375206E8CA07}.Release|x86.ActiveCfg = Release|x86

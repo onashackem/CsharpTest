@@ -13,19 +13,19 @@ namespace HashAlgorithms.Hashtables.Base
         protected Dictionary<int, TTableRow> table;
 
         /// <summary>
-        /// Defines whether enalrging table is allowed
+        /// Defines wheather enlarging table is allowed
         /// </summary>
-        protected bool CanEnlargeTable { protected get; protected set; }
+        protected bool CanEnlargeTable { get; set; }
 
         /// <summary>
-        /// Defines whether shrinking table is allowed
+        /// Defines wheather shrinking table is allowed
         /// </summary>
-        protected bool CanShrinkTable { protected get; protected set; }
+        protected bool CanShrinkTable { get; set; }
 
         /// <summary>
         /// Defines maximal count of hashed keys contained in the table
         /// </summary>
-        protected int MaxCapacity { protected get; protected set; }
+        protected int MaxCapacity { get; set; }
 
         /// <summary>
         /// Gets the level of occupancy
