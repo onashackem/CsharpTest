@@ -21,43 +21,30 @@ namespace WordWrap
                 if (!ProcessParameters(args, out INPUT_FILE, out OUTPUT_FILE, out LINE_LENGTH))
                     throw new ArgumentException();
 
-                using (Reader reader = new Reader(INPUT_FILE))
+                // TODO: remove
+                for (int i = 1; i <= LINE_LENGTH; ++i)
+                    Console.Write(i%10);
+                Console.WriteLine("");
+
+                using (StreamReader reader = new StreamReader(INPUT_FILE))
                 using (StreamWriter writer = new StreamWriter(OUTPUT_FILE, false))
                 {
-                    CurrentLine currentLine = new CurrentLine(LINE_LENGTH);
-
-                    while (!reader.EOF())
+                    LineProcessor lineProcessor = new LineProcessor(LINE_LENGTH, writer);
+                    WordStreamedReader wordReader = new WordStreamedReader(reader);
+                    
+                    // Skip the first new line(s) if any
+                    string word = wordReader.NextWord();
+                    if (word != null && word.Replace("\n", "").Length > 0)
+                        lineProcessor.AddWord(word);
+                    
+                    // Read words untill it overflows the line or the end of stream is reached
+                    while (((word = wordReader.NextWord()) != null))
                     {
-                        string word = null;
-
-                        // Read word untill it overflows the line or the end of stream is reached
-                        while (currentLine.MinimalLineLength < LINE_LENGTH && ((word = ReadWord(reader)) != null))
-                        {
-                            // Skip empty words (more spaces in a row)
-                            if (word.Length > 0)
-                            {
-                                // Is this the end of a paragraph?
-                                if (ContainsNewLine(word))
-                                {
-                                    // Word contains NEW_LINE(s)
-                                    currentLine.PrintParagraphs(writer, word, reader.EOF());
-                                }
-                                else
-                                {
-                                    // This is just an ordinary word
-                                    currentLine.AddWord(word);
-                                }
-                            }
-                        } // while word is read
-
-                        // Print line when is full or end of a file
-                        if (currentLine.Words.Count > 0)
-                            currentLine.PrintLine(writer, word == null);
-
-                    } // while !end of stream 
+                        lineProcessor.AddWord(word);
+                    }
 
                     writer.Flush();
-                } // using
+                }
             }
             catch (Exception ex)
             {
@@ -87,65 +74,43 @@ namespace WordWrap
 
             return true;
         }
-
-        public static bool ContainsNewLine(string word)
-        {
-            return word.Count(c => c == '\n') > 0;
-        }
-
-        private static string ReadWord(Reader reader)
-        {
-            if (reader.EOF())
-                return null;
-
-            char c;
-            StringBuilder word = new StringBuilder();
-
-            // REad word char by char
-            while (!reader.EOF())
-            {
-                c = reader.Char();
-
-                // Word ends with a space
-                if (c == ' ' || c == '\t')
-                    break;
-
-                // Build the word
-                word.Append(c);
-            }
-
-            return word.ToString();
-    
-        }
     }
 
-    class CurrentLine
+    /// <summary>
+    /// Processes words to fit the line
+    /// </summary>
+    class LineProcessor
     {
         private readonly int maximalLineLength;
+        private int currentLineWordsLenght = 0;
+        StreamWriter writer;
 
         /// <summary>
         /// Sum of lenthg of all words in the current line + 1 space between each two following words 
         /// </summary>
-        public int MinimalLineLength 
+        private int CurrentLineLength 
         {
             get
             {
-                return Words.Sum(word => word.Length) + Math.Max(0, Words.Count - 1);
+                return currentLineWordsLenght + Math.Max(0, CurrentLineWords.Count - 1);
             }
         }
 
         /// <summary>
         /// The list of words in the current line
         /// </summary>
-        public LinkedList<string> Words { get; private set; }
+        private List<string> CurrentLineWords { get; set; }
 
         /// <summary>
-        /// Default .ctor
+        /// .ctor
         /// </summary>
-        public CurrentLine(int maxLenght)
+        /// <param name="maxLenght">Maximal length of the line</param>
+        /// <param name="writer">Writer to write wrapped line into</param>
+        public LineProcessor(int maxLenght, StreamWriter writer)
         {
-            maximalLineLength = maxLenght;
-            this.Words = new LinkedList<string>();
+            this.maximalLineLength = maxLenght;
+            this.writer = writer;
+            this.CurrentLineWords = new List<string>();
         }
 
         /// <summary>
@@ -154,117 +119,40 @@ namespace WordWrap
         /// <param name="word">Word to add</param>
         public void AddWord(string word)
         {
-            Words.AddLast(word);
-        }
-
-        public void PrintLine(StreamWriter writer, bool endOfTheParagraph)
-        {
-            // The word that would exceed the line
-            string trailingWord = String.Empty; 
-
-            // Extract the trailing word
-            if (MinimalLineLength > this.maximalLineLength)
+            // Skip empty words (more spaces in a row)
+            if (word.Length > 0)
             {
-                // Get the trailing word
-                trailingWord = RemoveLastWord();
-            }
+                bool endOfTheParagraph = word.Contains('\n');
 
-            // Print the current line
-            // We are on the end of paragraph if the last word in the paragraph is in the current line
-            PrintLineInternal(writer, trailingWord.Length == 0 && endOfTheParagraph);
-
-            if (trailingWord.Length > 0)
-            {
-                AddWord(trailingWord);
-                                        
-                // Print the only one word if it is the only word on line because
-                //  a) is end of a pragraph or
-                //  b) is greater itself than line length
-                if (endOfTheParagraph || trailingWord.Length > this.maximalLineLength)
+                // Remove the newlines from the end of the word
+                if (endOfTheParagraph)
                 {
-                    PrintLineInternal(writer, endOfTheParagraph);
+                    word = word.Replace("\n", "");
+                }
+
+                // New word doesn't fit the line -> print the line without it
+                if (word.Length + CurrentLineLength + 1 > this.maximalLineLength)
+                {
+                    PrintLine();
+                }
+
+                // Add word to a line
+                CurrentLineWords.Add(word);
+                currentLineWordsLenght += word.Length;
+
+                // Is this the end of a paragraph?
+                if (endOfTheParagraph)
+                {
+                    PrintLine(endOfTheParagraph);
                 }
             }
         }
 
         /// <summary>
-        /// Prints paragraph(s) proeprly
+        /// Prints current line and clears the collection of words in the current line
         /// </summary>
-        /// <param name="writer">Writer to output</param>
-        /// <param name="lastWord">Last word with NEW_LINE(s)</param>
-        public void PrintParagraphs(StreamWriter writer, string lastWord, bool endOfFile)
-        {
-            string[] paragraphParts = lastWord.Split('\n');
-
-            var endOfParagraph = paragraphParts[0];
-
-            // Solve the end of current paragraph
-            if (endOfParagraph.Length == 0)
-            {
-                // This case when the whole text begins with some NEW_LINEs
-                // Prints a simple new line
-                new CurrentLine(maximalLineLength).PrintLine(writer, true);
-            }
-            else
-            {
-                // This is the regular end of the paragraph
-                AddWord(endOfParagraph);
-                PrintLine(writer, true);
-            }
-
-            // Skip all new lines before the end of file
-            if (endOfFile)
-            {
-                paragraphParts = paragraphParts.Reverse().SkipWhile(word => word == string.Empty).Reverse().ToArray();
-            }
-
-            // Current line is empty
-            // Now we have to distinct 3 possible options
-            //  1. Just a new paragraph begins (word was xxx.\nAyy)
-            //  2. There could be multiple newlines in a row (word was xxx.\n\n\nYyyy)
-            //  3. There are multiple one-word pararaphs (word was xxx.\n\nYyy.\nZzz.\nAaa)
-            for (int index = 1; index < paragraphParts.Length; ++index)
-            {
-                if (paragraphParts[index].Length == 0)
-                {
-                    // Just a new line (case 2)
-                    new CurrentLine(maximalLineLength).PrintLine(writer, true);
-                }
-                else
-                {
-                    // Start a new paragraph (cases 1 and 3)
-                    AddWord(paragraphParts[index]);
-
-                    // This is a case 3 - one word paragraph
-                    if (index < paragraphParts.Length - 1)
-                        PrintLine(writer, true);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Removes last word from the curret line
-        /// </summary>
-        /// <returns>Returns the removed word</returns>
-        private string RemoveLastWord()
-        {
-            if (Words.Count == 0)
-                return String.Empty;
-
-            var lastWord = Words.Last.Value;
-
-            // Remove word and subtract its size
-            Words.RemoveLast();
-
-            return lastWord;
-        }
-
-        /// <summary>
-        /// Prints line
-        /// </summary>
-        /// <param name="writer">Output writer</param>
         /// <param name="isEndOfParagraph">Is the end of the paragraph?</param>
-        private void PrintLineInternal(StreamWriter writer, bool isEndOfParagraph)
+        private void PrintLine(bool isEndOfParagraph = false)
         {
             /* Compute spaces between words which depends on:
                 *  a) we are at the end of a paragraph
@@ -272,20 +160,19 @@ namespace WordWrap
                 *  b) the words neds to be separated equaly (from the left)
                 *  c) there could be just 1 word on the line (too long for a line)
                 */
-
-            int totalSpaceAvalilable = this.maximalLineLength - Words.Sum(word => word.Length);
-            int spacesBetweenWords = isEndOfParagraph ? 1 : (Words.Count <= 1 ? 0 : totalSpaceAvalilable / (Words.Count - 1));
-            int spacesLeft = isEndOfParagraph ? 0 : (Words.Count <= 1 ? 0 : totalSpaceAvalilable % (Words.Count - 1));
+            int totalSpaceAvalilable = this.maximalLineLength - CurrentLineWords.Sum(word => word.Length);
+            int spacesBetweenWords = isEndOfParagraph ? 1 : (CurrentLineWords.Count <= 1 ? 0 : totalSpaceAvalilable / (CurrentLineWords.Count - 1));
+            int spacesLeft = isEndOfParagraph ? 0 : (CurrentLineWords.Count <= 1 ? 0 : totalSpaceAvalilable % (CurrentLineWords.Count - 1));
             
             StringBuilder line = new StringBuilder();
 
             // Print words with proper spacing
-            foreach (var word in Words)
+            for (int wordIndex = 0; wordIndex < CurrentLineWords.Count; ++wordIndex )
             {
-                line.Append(word);
+                line.Append(CurrentLineWords[wordIndex]);
 
                 // No spaces after the last word
-                if (word == Words.Last.Value)
+                if (wordIndex == CurrentLineWords.Count - 1)
                     break;
 
                 // Spaces between each 2 following words
@@ -306,15 +193,196 @@ namespace WordWrap
             string lineToPrint = line.ToString();
 
             // Assert full-line length
-            if (!isEndOfParagraph && Words.Count > 1)
+            if (!isEndOfParagraph && CurrentLineWords.Count > 1)
                 System.Diagnostics.Debug.Assert(lineToPrint.Length == this.maximalLineLength);
 
             // Write computed line
-            Console.WriteLine(lineToPrint);
+            // TODO: Remove
+            Console.Write(lineToPrint);
+            Console.WriteLine(string.Format(" {0} {1}", totalSpaceAvalilable, spacesBetweenWords));
             writer.WriteLine(lineToPrint);
 
             // Clear line after is printed
-            Words.Clear();
+            CurrentLineWords.Clear();
+            currentLineWordsLenght = 0;
+        }
+    }
+
+    class WordStreamedReader
+    {
+        StreamReader reader;
+        int bufferSize = 10;
+        int index = 0;
+        int charsRead = 0;
+
+        char[] buffer;
+
+        public WordStreamedReader(StreamReader reader)
+        {
+            buffer = new char[bufferSize];
+            this.reader = reader;
+
+            // Init the buffer
+            ReadBuffer();
+        }
+
+        public string NextWord()
+        {
+            if (charsRead == 0)
+                return null;
+
+            StringBuilder word = new StringBuilder();
+
+            // Read word
+            while (!SkipWhiteSpace(buffer[index]))
+            {
+                word.Append(buffer[index]);
+                ++index;
+
+                if (index == charsRead)
+                {
+                    ReadBuffer();
+                    if (charsRead == 0)
+                    {
+                        // EOF
+                        word.Append("\n");
+                        return word.ToString();
+                    }
+                }
+            }
+
+            // Skip white spaces, remember newlines
+            bool newLineFound = false;
+            while(SkipWhiteSpace(buffer[index]))
+            {
+                newLineFound |= IsNewline(buffer[index]);
+                ++index;
+
+                if (index == charsRead)
+                    ReadBuffer();
+            }
+
+            // Newline or EOF
+            if (newLineFound || charsRead == 0)
+                word.Append("\n");
+
+            return word.ToString();
+        }
+
+        private void ReadBuffer()
+        {
+            index = 0;
+            charsRead = reader.Read(buffer, index, bufferSize);
+        }
+
+        private bool IsWhiteSpace(char c)
+        {
+            return c == ' ' || c == '\t';
+        }
+
+        private bool IsNewline(char c)
+        {
+            return c == '\n';
+        }
+
+        private bool SkipWhiteSpace(char c)
+        {
+            return IsWhiteSpace(c) || IsNewline(c);
+        }
+    }
+
+    /// <summary>
+    /// Reads word from C# input
+    /// </summary>
+    class WordReader
+    {
+        Reader reader;
+
+        char? lookoutChar;
+
+        /// <summary>
+        /// Gets whether reader has reached the end of the stream
+        /// </summary>
+        public bool EndOfStream
+        {
+            get
+            {
+                return reader.EOF();
+            }
+        }
+
+        /// <summary>
+        /// .ctor
+        /// </summary>
+        /// <param name="reader">Input reader</param>
+        public WordReader(Reader reader)
+        {
+            this.reader = reader;
+            lookoutChar = null;
+        }
+
+        /// <summary>
+        /// Reads next word from input
+        /// </summary>
+        /// <returns>Returns word or null if the end of stream is found</returns>
+        public string NextWord()
+        {
+            if (EndOfStream)
+                return null;
+
+            bool whiteSpaceFound = false;
+            StringBuilder word = new StringBuilder();
+
+            // Append char read in previous method call
+            if (lookoutChar.HasValue)
+                word.Append(lookoutChar.Value);
+
+            // Read word char by char
+            while (!EndOfStream)
+            {
+                char c = reader.Char();
+
+                // Word ends with a space or new-line, read it till the next word
+                if (IsWhiteSpace(c) || IsNewline(c))
+                {
+                    // Apend newline(s)
+                    if (IsNewline(c))
+                    {
+                        word.Append(c);
+                    }
+
+                    whiteSpaceFound = true;
+                }
+                else if (whiteSpaceFound)
+                {
+                    // C is a char from the next word
+                    lookoutChar = c;
+                    break;
+                }
+                else
+                {
+                    // Build the word char by char from non-whitespace characters
+                    word.Append(c);
+                }
+            }
+
+            // Return the composed word
+            return word.ToString();
+        }
+
+        private bool IsWhiteSpace(char c)
+        {
+            return c == ' ' || c == '\t';
+        }
+
+        private bool IsNewline(char c)
+        {
+            return c == '\n';
+        }
+
+        private bool SkipWhiteSpace(char c)
+        {
+            return IsWhiteSpace(c) || IsNewline(c);
         }
     }
 }
