@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleSum", "SimpleSum\Simp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodexReader", "CodexReader\CodexReader.csproj", "{63F48929-B575-46E0-A86D-1F904AF8531F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Huffman", "Huffman\Huffman.csproj", "{2BBB243A-B509-4FF4-B76B-53EB7E72572C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -25,6 +27,10 @@ Global
 		{63F48929-B575-46E0-A86D-1F904AF8531F}.Debug|x86.Build.0 = Debug|x86
 		{63F48929-B575-46E0-A86D-1F904AF8531F}.Release|x86.ActiveCfg = Release|x86
 		{63F48929-B575-46E0-A86D-1F904AF8531F}.Release|x86.Build.0 = Release|x86
+		{2BBB243A-B509-4FF4-B76B-53EB7E72572C}.Debug|x86.ActiveCfg = Debug|x86
+		{2BBB243A-B509-4FF4-B76B-53EB7E72572C}.Debug|x86.Build.0 = Debug|x86
+		{2BBB243A-B509-4FF4-B76B-53EB7E72572C}.Release|x86.ActiveCfg = Release|x86
+		{2BBB243A-B509-4FF4-B76B-53EB7E72572C}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

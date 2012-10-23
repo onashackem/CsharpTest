@@ -1,0 +1,13 @@
+﻿Napište program, který dostane jako argument jméno vstupního souboru. Přečte všechna data ze vstupního souboru, na jejich základě postaví Huffmanův strom a ten vypíše v prefixovém tvaru na standardní výstup. Pokud nedostane právě jeden argument, vypište na std. výstup řetězec "Argument Error". Pokud vstupní soubor nejde z jakéhokoli důvodu otevřít nebo z něj nelze číst, vypište na std. výstup řetězec "File Error". Vstupní soubor může mít libovolný formát (tedy může být klidně binární). Pro upřesnění: Znakem od této chvíle dál myslíme nějaký symbol reprezentující 1 byte (dívejte se tedy na data spíše jako na posloupnost bytů než na text).
+
+Huffmanův strom je binární strom, v jehož listech se nachází všechny znaky, které se vyskytly ve vstupním souboru alespoň jednou. Váhou znaku pak rozumíme počet výskytů daného znaku ve vstupním souboru. Například vstupní data "xxyz" obsahují znaky "x", "y" a "z", přičemž "x" má váhu 2 a "y" i "z" mají váhu 1. Vnitřní uzly stromu neobsahují žádné znaky a jejich váha je rovna součtu vah obou jejich synů (každý vnitřní uzel má vždy oba syny).
+
+Při stavbě stromu postupujeme následovně. Nejprve si připravíme všechny listy na základě analýzy vstupních dat a připravíme si z nich les jednoprvkových stromů. Dokud je v lese více než jeden strom, vezmeme vždy dva nejlehčí stromy z lesa, spojíme je pod nově vytvořený kořen (jehož váhu spočítáme jako součet vah listů) a vložíme jej zpět do lesa. Při spojování je uzel s menší váhou vždy vlevo. Pokud při výběru uzlů má více uzlů stejnou váhu, aplikují se následující pravidla (v pořadí, ve kterém jsou napsána). Tato pravidla také rozhodují, který uzel by měl být připojen vlevo a který vpravo, pokud mají oba stejnou váhu.
+
+listy jsou lehčí než vnitřní uzly
+mezi listy mají přednost ty, které mají menší hodnotu v nich uloženého znaku
+mezi vnitřními uzly mají přednost ty, které vznikly dříve v průběhu algoritmu
+
+Vzniklý strom vypište na standardní výstup v prefixovém tvaru. Listy budou vypsány ve formátu *SYMBOL:VAHA, kde SYMBOL je kód znaku zapsaný decimálně (číslo od 0 do 255) a váha je počet výskytů daného znaku ve vstupním souboru (rovněž zapsaný decimálně). Vnitřní uzly vypište ve tvaru VAHA LEVY PRAVY, přičemž váha je opět celé číslo zapsané decimálně a LEVY resp. PRAVY je rekurzivní výpis levého resp. pravého podstromu a mezi jednotlivými částmi je právě jedna mezera. Pokud je délka vstupního souboru 0 bytů, tak program na standardní výstup nevypíše nic.
+
+Důležitá poznámka: Váš program by měl být bez problémů schopen pracovat minimálně s 1 TB (přesněji tedy 1 TiB) vstupními soubory. K dispozici máte ovšem pouze O(1) paměti.

@@ -145,7 +145,7 @@ LINE_LENGTH = 20;
             // Skip empty words (more spaces in a row)
             if (word.Length > 0)
             {
-                bool endOfTheParagraph = word.Contains('\n');
+                bool endOfTheParagraph = word.Contains("\n");
 
                 // Remove the newlines from the end of the word
                 if (endOfTheParagraph)
