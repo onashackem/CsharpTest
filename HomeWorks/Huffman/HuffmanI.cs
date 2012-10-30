@@ -21,20 +21,7 @@ namespace Huffman
 
             try
             {
-                // Read cardinalities if all characters from input file
-                var cardinalities = ReadCharacterCardinalities(INTPUT_FILE);
-
-                // Empty file
-                if (cardinalities.Count == 0)
-                    return;
-
-                var treeCollection = new TreeCollection(cardinalities);
-
-                // Read cardinalities, build sorted collection above cardinalities and compute huffman tree above it
-                Tree huffmanTree = BuildHuffmanTree(treeCollection);
-
-                // Print the result tree                
-                huffmanTree.PrintTree(System.Console.Out);
+                new Compressor(INTPUT_FILE).Compress();
             }
             catch (Exception)
             {
@@ -42,38 +29,150 @@ namespace Huffman
             }
         }
         
+    }
+
+    /// <summary>
+    /// Sorted collection of trees.
+    /// 
+    /// Implemented as two priority queues - where tree weight is a priority. One queue for leaf nodes, second for the trees.
+    /// </summary>
+    class TreeBuilder
+    {
+        private readonly LinkedList<Tree> leafQueue = new LinkedList<Tree>();
+        private readonly LinkedList<Tree> treeQueue = new LinkedList<Tree>();
+
+        private readonly Dictionary<int, long> cardinalities = new Dictionary<int, long>();
+        private readonly string inputFilePath;
+
         /// <summary>
-        /// Takes the two "smalest" trees from collection, composes them to the bigger tree.
-        /// 
-        /// Does this until there is only the last tree - the Huffman tree.
+        /// Return the first tree with the lowest weight. This tree is removed from the collection
+        /// </summary>
+        private Tree SmallestTree
+        {
+            get
+            {
+                // Just check
+                if (leafQueue.Count == 0 && treeQueue.Count == 0)
+                    return null;
+
+                --TreeCount;
+
+                // Both queues are not empty
+                if (leafQueue.Count > 0 && treeQueue.Count > 0)
+                {
+                    if (leafQueue.First.Value.Weight <= treeQueue.First.Value.Weight)
+                    {
+                        var tree = leafQueue.First.Value;
+
+                        leafQueue.RemoveFirst();
+
+                        return tree;
+                    }
+                    else
+                    {
+                        var tree = treeQueue.First.Value;
+
+                        treeQueue.RemoveFirst();
+
+                        return tree;
+                    }
+                }
+                // treeQueue is not empty
+                else if (leafQueue.Count == 0)
+                {
+                    var tree = treeQueue.First.Value;
+
+                    treeQueue.RemoveFirst();
+
+                    return tree;
+                }
+                // leafQueue is not empty
+                else
+                {
+                    var tree = leafQueue.First.Value;
+
+                    leafQueue.RemoveFirst();
+
+                    return tree;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets count of trees in the collection
+        /// </summary>
+        private int TreeCount { get; set; }
+
+        /// <summary>
+        /// Default .ctor
+        /// </summary>
+        /// <param name="filePath">Path to read build the tree from</param>
+        public TreeBuilder(string filePath)
+        {
+            this.inputFilePath = filePath;
+        }
+
+        /// <summary>
+        /// Builds huffman tree from file specified in constructor.
         /// </summary>
         /// <param name="treeCollection">Ascending-sorted collection of trees</param>
-        /// <returns>Returns the huffman tree</returns>
-        private static Tree BuildHuffmanTree(TreeCollection treeCollection)
+        /// <returns>Returns the huffman tree</returns>        
+        public Tree BuildHuffmanTree()
         {
+            // Read cardinalities from input file
+            ReadCardinalities();
+
+            // Fill queue with leaf-noded trees
+            FillLeafQueue();
+
             // Take 2 "smallest" trees, add one
-            while (treeCollection.TreeCount >= 2)
+            while (TreeCount >= 2)
             {
                 // Remove the two trees by specified order and compose them to the tree that is added to trees collection
-                treeCollection.Add(new Tree(treeCollection.SmallestTree, treeCollection.SmallestTree));
+                Add(new Tree(SmallestTree, SmallestTree));
             }
 
             // Returns the remaining tree
-            return treeCollection.SmallestTree;
+            return SmallestTree;
         }
+
+        /// <summary>
+        /// Creates leaf-node for each character and its cardinality. The queue is orderd by weight and character ascending
+        /// </summary>
+        private void FillLeafQueue()
+        {
+            // TODO: Sort this collecton effectively
+            var collection = from p in cardinalities
+	                        orderby p.Value, p.Key
+	                        select p;
+
+            // Fill the collection with leaf-nodes
+            // The order by character ensures that characters with the same weight are ordered properly (the lowest first)
+            foreach (var pair in collection)
+            {
+                leafQueue.AddLast(new Tree(new LeafNode(pair.Key, pair.Value)));
+            }
+
+            TreeCount = leafQueue.Count;
+        }
+
+        /// <summary>
+        /// Adds tree to the collection
+        /// </summary>
+        /// <param name="tree">Tree to add</param>
+        private void Add(Tree tree)
+        {
+            treeQueue.AddLast(tree);
+            ++TreeCount;
+        } 
         
         /// <summary>
         /// Reads file and collects cardinalities for every character in the file
         /// </summary>
-        /// <param name="filePath">Path to the file</param>
-        /// <param name="cardinalities">Cartinalities of all characters in the file</param>
-        private static Dictionary<int, long> ReadCharacterCardinalities(string filePath)
+        private void ReadCardinalities()
         {
-            Dictionary<int, long> cardinalities = new Dictionary<int, long>();
-
             // Read cardinalities
-            FileStream reader = new FileStream(filePath, FileMode.Open);
-            try
+            using(var reader = new FileStream(this.inputFilePath, FileMode.Open))
             {
                 int maxSize = 16000;
                 int character, length;
@@ -97,126 +196,125 @@ namespace Huffman
                     }
                 }
             }
-            finally
-            {
-                reader.Close();
-            }
-
-            return cardinalities;
-        } 
+        }     
     }
 
-    /// <summary>
-    /// Sorted collection of trees.
-    /// 
-    /// Implemented as two priority queues - where tree weight is a priority. One queue for leaf nodes, second for the trees.
-    /// </summary>
-    class TreeCollection
+    public class Compressor
     {
-        private List<Tree> leafQueue = new List<Tree>();
-        private List<Tree> treeQueue = new List<Tree>();
+        private List<byte> HEADER = new List<byte>() { 0x7B, 0x68, 0x75, 0x7C, 0x6D, 0x7D, 0x66, 0x66 };
+
+        private readonly string inputFilePath;
+        private readonly string outputFilePath;
 
         /// <summary>
-        /// Return the first tree with the lowest weight. This tree is removed from the collection
+        /// Inits input and output file paths
         /// </summary>
-        public Tree SmallestTree
+        /// <param name="inputFile"></param>
+        public Compressor(string inputFile)
         {
-            get
+            this.inputFilePath = inputFile;
+            this.outputFilePath = String.Format("{0}.huff", inputFile);
+        }
+
+        /// <summary>
+        /// Compresses file specified in constructor
+        /// </summary>
+        public void Compress()
+        {
+            var huffmanTree = new TreeBuilder(this.inputFilePath).BuildHuffmanTree();
+
+            using (var writer = new FileStream(this.outputFilePath, FileMode.OpenOrCreate))
+            using (var reader = new FileStream(this.inputFilePath, FileMode.Open))
             {
-                // Just check
-                if (leafQueue.Count == 0 && treeQueue.Count == 0)
-                    return null;
+                WriteHeader(writer);
 
-                --TreeCount;
+                WriteHuffmanTree(writer, huffmanTree);
 
-                // Both queues are not empty
-                if (leafQueue.Count > 0 && treeQueue.Count > 0)
+                CompressFile(writer, reader);
+            }
+        }
+
+        private void CompressFile(FileStream writer, FileStream reader)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void WriteHuffmanTree(FileStream writer, Tree huffmanTree)
+        {
+            WriteTreeNode(writer, huffmanTree);
+        }
+
+        private void WriteTreeNode(FileStream writer, Tree node)
+        {
+            var bytes = CreateByteRepresentationForNode(node);
+
+            if (node.Leaf == null)
+            {
+                WriteTreeNode(writer, node.Left);
+                WriteTreeNode(writer, node.Left);
+            }
+        }
+
+        private byte[] CreateByteRepresentationForNode(Tree node)
+        {
+            //TODO: BitConverter.IsLittleEndian
+
+            var array = new bool[64];  
+
+            array[0] = node.Leaf != null;
+
+            var weight = node.Weight;
+            for(int i = 1; i < 56; ++i)
+            {
+                if (weight >= 0)
                 {
-                    if (leafQueue[0].Weight <= treeQueue[0].Weight)
+                    array[i] = Convert.ToBoolean(weight % 2);
+                    weight >>= 1;
+                }
+                else
+                {
+                    array[i] = false;
+                }
+            }
+
+            
+            if (node.Leaf != null)
+            {
+                var character = node.Leaf.Character;
+                for (int i = 56; i < 64; ++i)
+                {
+                    if (character >= 0)
                     {
-                        var tree = leafQueue[0];
-
-                        leafQueue.RemoveAt(0);
-
-                        return tree;
+                        array[i] = Convert.ToBoolean(character % 2);
+                        character >>= 1;
                     }
                     else
                     {
-                        var tree = treeQueue[0];
-
-                        treeQueue.RemoveAt(0);
-
-                        return tree;
+                        array[i] = false;
                     }
                 }
-                // treeQueue is not empty
-                else if (leafQueue.Count == 0)
+            }
+            else
+            {
+                for (int i = 56; i < 64; ++i)
                 {
-                    var tree = treeQueue[0];
-
-                    treeQueue.RemoveAt(0);
-
-                    return tree;
-                }
-                // leafQueue is not empty
-                else
-                {
-                    var tree = leafQueue[0];
-
-                    leafQueue.RemoveAt(0);
-
-                    return tree;
+                    array[i] = false;
                 }
             }
+
+            var bytes = new byte[8];
+            return bytes;
         }
 
-        /// <summary>
-        /// Gets count of trees in the collection
-        /// </summary>
-        public int TreeCount { get; private set; }
-
-        /// <summary>
-        /// Builds a collection of leaf-noded trees based on (character, cardinality) pairs
-        /// </summary>
-        /// <param name="cardinalities">(character, cardinality) pairs collection</param>
-        public TreeCollection(Dictionary<int, long> cardinalities)
+        private void WriteHeader(FileStream writer)
         {
-            // TODO: Sort this collecton effectively
-            var collection = from p in cardinalities
-	                        orderby p.Value, p.Key
-	                        select p;
-
-            // Fill the collection with leaf-nodes
-            // The order by character ensures that characters with the same weight are ordered properly (the lowest first)
-            foreach (var pair in collection)
+            foreach (var b in HEADER)
             {
-                leafQueue.Add(new Tree(new LeafNode(pair.Key, pair.Value)));
-            }
-
-            TreeCount = leafQueue.Count;
-        }
-
-        /// <summary>
-        /// Adds tree to the collection
-        /// </summary>
-        /// <param name="tree">Tree to add</param>
-        public void Add(Tree tree)
-        {
-            treeQueue.Add(tree);
-            ++TreeCount;
-        }        
-
-        /// <summary>
-        /// Weight comparer
-        /// </summary>
-        private class SortWeightAscending : IComparer<long>
-        {
-            public int Compare(long x, long y)
-            {
-                return x.CompareTo(y);
+                writer.WriteByte(b);
             }
         }
-    }   
+
+    }
 
     /// <summary>
     /// Class that represents Huffman-coding tree.
@@ -225,14 +323,14 @@ namespace Huffman
     /// Tree = LeafNode | (LeftSubTree, RightSubTree) where Subtrees are Trees.
     /// 
     /// Invariants: 
-    /// 
     ///     (LeafNode == null) || (Left == null && Right == null).
     ///     Left.Weight &lt;= Rigth.Weight
     /// </summary>
     class Tree
     {
         /// <summary>
-        /// Gets LeafNode or null if tree has Left and Rigtht subrees
+        /// Gets LeafNode or null if tree has Left and Rigtht sub
+    /// rees
         /// </summary>
         public LeafNode Leaf { get; private set; }
 
