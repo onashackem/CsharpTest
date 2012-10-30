@@ -61,6 +61,12 @@
   <ItemGroup>
     <Content Include="Zadani.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CodexReader\CodexReader.csproj">
+      <Project>{63F48929-B575-46E0-A86D-1F904AF8531F}</Project>
+      <Name>CodexReader</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
