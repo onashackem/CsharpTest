@@ -11,18 +11,18 @@ namespace Huffman
     {
         static void Main(string[] args)
         {
-            if (args.Length != 1)
+            string INPUT_FILE, OUTPUT_FILE;
+
+            if (!ProcessArguments(args, out INPUT_FILE, out OUTPUT_FILE))
             {
                 Console.WriteLine("Argument Error");
                 return;
             }
 
-            string INTPUT_FILE = args[0];
-
             try
             {
-                // Compress the input file
-                new Compressor().Compress(INTPUT_FILE);
+                // Decompress the input file
+                new Decompressor().Decompress(INPUT_FILE, OUTPUT_FILE);
             }
             catch (Exception e)
             {
@@ -30,7 +30,329 @@ namespace Huffman
                 Console.WriteLine("File Error");
             }
         }
+
+        /// <summary>
+        /// Extracts input and output file from arguments.
+        /// </summary>
+        /// <param name="args">Arguments collection</param>
+        /// <param name="inputFile">Exctracted input file</param>
+        /// <param name="outputFile">Extracted output file</param>
+        /// <returns>Returns false if something doesn't fit, true otherwise</returns>
+        private static bool ProcessArguments(string[] args, out string inputFile, out string outputFile)
+        {
+            // Intial values
+            inputFile = outputFile = string.Empty;
+
+            // Check arguments length
+            if (args.Length != 1)
+            {
+                return false;
+            }
+
+            inputFile = args[0].ToLower();
+
+            // Check input file has proper extension
+            if (inputFile == null || !inputFile.EndsWith(".huff"))
+            {
+                return false;
+            }
+
+            outputFile = inputFile.Remove(inputFile.Length - 5);
+
+            // Input file was only an extension
+            if (outputFile.Length == 0)
+            {
+                return false;
+            }
+
+            // Input parameter is OK
+            return true;
+        }
         
+    }
+
+    /// <summary>
+    /// This class decompresses compressed file. Parses Huffman tree from the file and decompresses the file content.
+    /// </summary>
+    public class Decompressor
+    {
+        /// <summary>
+        /// Byte array to read bytes from the file
+        /// </summary>
+        private byte[] byteBuffer = new byte[8];
+
+        private readonly byte[] HEADER = new byte[8] { 0x7B, 0x68, 0x75, 0x7C, 0x6D, 0x7D, 0x66, 0x66 };
+        private readonly byte[] DELIMITTER = new byte[8] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00 };
+
+        /// <summary>
+        /// The main method to decompress the specified file int specified output file.
+        /// </summary>
+        /// <param name="inputFile">The compressed input file</param>
+        /// <param name="outputFile">The path to decompress the input file into</param>
+        public void Decompress(string inputFile, string outputFile)
+        {
+            using (var writer = new FileStream(outputFile, FileMode.OpenOrCreate))
+            using (var reader = new FileStream(inputFile, FileMode.Open))
+            {
+                // Read and validate file by header
+                ReadHeader(reader);
+
+                // Restore the coded Huffman tree
+                Tree huffmanTree = RestoreHuffmanTree(reader);
+
+                // Validate that TreeDelimiter is present
+                ReadTreeDelimitter(reader);
+
+                // Decode characters
+                DecodeCharacters(reader, writer, huffmanTree);
+            }
+        }
+
+        /// <summary>
+        /// Restores the coded Huffman tree. When an error occured, and Exception is thrown.
+        /// </summary>
+        /// <param name="reader">Reader to input file. The position must be on the first tree node.</param>
+        /// <returns>Returns restored huffman tree</returns>
+        private Tree RestoreHuffmanTree(FileStream reader)
+        {
+            // Begin recursive call
+            return RestoreNode(reader);
+        }
+
+        /// <summary>
+        /// Recursive method to resotre tree coded by Compressor class in the infix notation.
+        /// </summary>
+        /// <param name="reader">Reader to coded file.</param>
+        /// <returns>Returns restored node</returns>
+        private Tree RestoreNode(FileStream reader)
+        {
+            // Read node from input
+            int bytesRead = ReadBytes(reader);
+
+            // Validate that end of the tree/file is not reached
+            if (bytesRead != 8 || CompareBytes(byteBuffer, DELIMITTER))
+                throw new Exception("Tree definition corrupted");
+
+            // Convert bytes array to bit array
+            bool[] nodeCode = CreateBitArrayBytes(byteBuffer);
+
+            // Count weight
+            long weight = CountWeight(nodeCode);
+
+            // Count character
+            int character = CountCharacter(nodeCode);
+
+            // Leaf starts with 0 and has no children
+            if (nodeCode[0])
+            {
+                return new Tree(new LeafNode(character, weight));
+            }
+
+            // Create both sub-trees
+            Tree left = RestoreNode(reader);
+            Tree right = RestoreNode(reader);
+                     
+            // Assert weight is properly coded
+            if (weight != left.Weight + right.Weight)
+                throw new Exception("Weight coded in the inner tree should equal to sum of subtrees weights");
+
+            // Inner trees have no character
+            if (character != 0)
+                throw new Exception("Inner node should not code any tree");
+
+            // Create and return an inner node
+            return new Tree(left, right);
+        }
+
+        /// <summary>
+        /// Decodes character from node code
+        /// </summary>
+        /// <param name="nodeCode">Coded node</param>
+        /// <returns>Returns character</returns>
+        private int CountCharacter(bool[] nodeCode)
+        {
+            return (int)ConvertFromBiary(nodeCode, 56, 64);
+        }
+
+        /// <summary>
+        /// Decodes weight from node code
+        /// </summary>
+        /// <param name="nodeCode">Coded node</param>
+        /// <returns>Returns weight</returns>
+        private long CountWeight(bool[] nodeCode)
+        {
+            return ConvertFromBiary(nodeCode, 1, 56);
+        }
+
+        /// <summary>
+        /// Converts specified binary field part to decimap
+        /// </summary>
+        /// <param name="binary">Binary code</param>
+        /// <param name="startIndex">Start at this index</param>
+        /// <param name="endIndex">End before this index</param>
+        /// <returns>Returns converter part of binary field</returns>
+        private long ConvertFromBiary(bool[] binary, int startIndex, int endIndex)
+        {
+            long result = 0;
+            long powerOf2 = 1;
+            for (int i = startIndex; i < endIndex; ++i)
+            {
+                if (binary[i])
+                    result += powerOf2;
+
+                powerOf2 <<= 1;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Converts given byte array to bit array - "Little Endian-ally" :-D
+        /// </summary>
+        /// <param name="bytes">Bytes to cenvert</param>
+        /// <param name="bytesCount">Optionaly specify the count of bytes to convert</param>
+        /// <returns>Returns bit array representation of the bytes</returns>
+        private bool[] CreateBitArrayBytes(byte[] bytes, int bytesCount = -1)
+        {
+            if (bytesCount == -1)
+                bytesCount = bytes.Length;
+
+            bool[] bits = new bool[64];
+                        
+            // Every byte is coded into 8 bits
+            for (int byteIndex = 0; byteIndex < bytesCount; ++byteIndex)
+            {
+                byte b = bytes[byteIndex];
+                for (int bitIndex = 0; bitIndex < 8; ++bitIndex)
+                {
+                    bits[byteIndex * 8 + bitIndex] = (b % 2 == 1 ? true : false);
+                    b >>= 1;
+                }
+            }
+
+            return bits;
+        }
+
+        /// <summary>
+        /// Reads the part of the input file that contains the coded characters and decodes them.
+        /// </summary>
+        /// <param name="reader">Reader from input file set to the first coded character</param>
+        /// <param name="writer">Writer to output file</param>
+        /// <param name="huffmanTree">Huffman tree that was used to code the file</param>
+        private void DecodeCharacters(FileStream reader, FileStream writer, Tree huffmanTree)
+        {
+            // Iteration note through the tree
+            Tree currentNode = huffmanTree;
+
+            // Weight of the whole tree represents the number of all encoded characters 
+            // (to skip the 0s at the end of the file)
+            long charactersToPrint = huffmanTree.Weight;
+
+            // Read until the end of the file -> read bytes into the byteBuffer
+            int bytesRead = 0;
+            while ((bytesRead = ReadBytes(reader)) > 0)
+            {
+                // Convert bytes to bit "stream" with encoded characters
+                bool[] paths = CreateBitArrayBytes(byteBuffer, bytesRead);
+
+                // Every true/false represents a move in the tree. 
+                // When the iterator node reaches the Leaf node -> the character is encoded
+                foreach(var direction in paths)
+                {
+                    // Left (false) or right (true)?
+                    if (direction)
+                        currentNode = currentNode.Right;
+                    else
+                        currentNode = currentNode.Left;
+
+                    // End of the path is when the leaf if reached. Leaf contains character
+                    if (currentNode.Leaf != null)
+                    {
+                        // Write decoded character
+                        writer.WriteByte((byte)currentNode.Leaf.Character);
+
+                        // Start from the tree root
+                        currentNode = huffmanTree;
+
+                        // Check all characters are printed -> the rest of the file is insignificant
+                        if (--charactersToPrint == 0)
+                            return;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Read and assert that Tree Delimiter is read properly. Throws Exception when not.
+        /// </summary>
+        /// <param name="reader">Reader from input file set before the expected tree delimiter</param>
+        private void ReadTreeDelimitter(FileStream reader)
+        {
+            ReadBytes(reader);
+
+            if (byteBuffer == DELIMITTER)
+                throw new Exception("Delimitter is corrupted"); 
+        }
+
+        /// <summary>
+        /// Read and assert that file header is read properly. Throws Exception when not.
+        /// </summary>
+        /// <param name="reader">Reader from input file set before the expected file header</param>
+        private void ReadHeader(FileStream reader)
+        {
+            ReadBytes(reader);
+
+            if (byteBuffer == HEADER)
+                throw new Exception("Header is corrupted");            
+        }
+
+        /// <summary>
+        /// Compares two bytes array whether contain the same bytes
+        /// </summary>
+        /// <param name="origin">First byte array</param>
+        /// <param name="compareTo">Second byte array</param>
+        /// <returns>Returns true if fields contain the same bytes</returns>
+        private static bool CompareBytes(byte[] origin, byte[] compareTo)
+        {
+            return origin.SequenceEqual(compareTo);
+
+            /*
+            // Different lenght
+            if (origin.Length != compareTo.Length)
+                return false;
+
+            // Different content
+            for (int i = 0; i < origin.Length; ++i)
+            {
+                if (origin[i] != compareTo[i])
+                    return false;
+            }
+
+            // Are the same
+            return true;
+             */
+        }
+
+        /// <summary>
+        /// Reads bytes from input file into byteBuffer class member.
+        /// </summary>
+        /// <param name="reader">Reader to input file</param>
+        /// <returns>Returns the number of read bytes</returns>
+        private int ReadBytes(FileStream reader)
+        {
+            // Read byteBuffer
+            for (int i = 0; i < byteBuffer.Length; ++i)
+            {
+                var b = reader.ReadByte();
+
+                if (b == -1)
+                    return i;
+
+                byteBuffer[i] = (byte)b;
+            }
+
+            return byteBuffer.Length;
+        }
     }
 
     /// <summary>

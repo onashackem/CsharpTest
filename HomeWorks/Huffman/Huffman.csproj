@@ -59,6 +59,8 @@
     <None Include="Tests\1\simple4.out" />
     <None Include="Tests\2\binary.in" />
     <None Include="Tests\2\binary.in.huff" />
+    <None Include="Tests\3\simple5.in.huff" />
+    <None Include="Tests\3\simple5.in" />
     <None Include="Tests\2\simple.in" />
     <None Include="Tests\2\simple.in.huff" />
     <None Include="Tests\2\simple2.in" />
@@ -67,6 +69,20 @@
     <None Include="Tests\2\simple3.in.huff" />
     <None Include="Tests\2\simple4.in" />
     <None Include="Tests\2\simple4.in.huff" />
+    <None Include="Tests\3\binary.in" />
+    <None Include="Tests\3\binary.in.huff" />
+    <None Include="Tests\3\binary_bad.in.huff" />
+    <None Include="Tests\3\simple.in" />
+    <None Include="Tests\3\simple.in.huff" />
+    <None Include="Tests\3\simple2.in" />
+    <None Include="Tests\3\simple2.in.huff" />
+    <None Include="Tests\3\simple3.in" />
+    <None Include="Tests\3\simple3.in.huff" />
+    <None Include="Tests\3\simple4.in" />
+    <None Include="Tests\3\simple4.in.huff" />
+    <None Include="Tests\3\simple4_bad.in.huff" />
+    <None Include="Tests\3\simple4_bad2.in.huff" />
+    <None Include="Tests\3\simple4_bad3.in.huff" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Zadani.txt" />

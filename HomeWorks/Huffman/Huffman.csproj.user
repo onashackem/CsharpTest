@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
-    <StartArguments>E:\DropBox\DEV\CsharpTest\HomeWorks\Huffman\Tests\2\binary.in</StartArguments>
+    <StartArguments>E:\DropBox\DEV\CsharpTest\HomeWorks\Huffman\Tests\3\simple5.in.huff</StartArguments>
   </PropertyGroup>
 </Project>
