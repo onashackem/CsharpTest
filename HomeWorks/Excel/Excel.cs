@@ -88,23 +88,78 @@ namespace Excel
 
         public Cell FindCell(string identifier)
         {
+            // Match inentifier with proper cell regex
+            var match = Regex.Match(identifier, @"([^:]+:)?([A-Z]+)([0-9]+)");
+
             // Invalid cell identifier
-            if (!Regex.Match(identifier, @"([^:]+)?[A-Z]+[0-9]+").Success)
+            if (!match.Success)
             {
                 return null;
             }
 
+            int rowIndex = Convert.ToInt32(match.Groups[3].ToString()) - 1;
+            int columnIndex = GetColumnIndexFromColumnName(match.Groups[2].ToString().ToUpper());
+            int colonIndex = identifier.IndexOf(":");
 
+            if (colonIndex > 0)
+            {
+                return FindCellInSheet(identifier.Substring(0, colonIndex), columnIndex, rowIndex);
+            }
 
+            // RowIndex out of bounds
+            if (cellRows.Count <= rowIndex)
+                return new ZeroValueCell();
+
+            // ColumnIndex out of bounds
+            if (cellRows.ElementAt(rowIndex).Length <= columnIndex)
+                return new ZeroValueCell();
+
+            // Return row
+            return cellRows.ElementAt(rowIndex)[columnIndex];
+        }
+
+        private int GetColumnIndexFromColumnName(string columnName)
+        {
+            int index = 0;
+            int power = 1;
+            foreach (var c in columnName.Reverse())
+            {
+                // Horner with base 26
+                index += ((int)c - (int)'A') * power;
+                power *= 26;
+            }
+
+            return index;
+        }
+
+        private Cell FindCellInSheet(string sheet, int columnIndex, int rowIndex)
+        {
             return null;
         }
 
         private void WriteCells(StreamWriter writer)
         {
+            foreach (var cellRow in cellRows)
+            {
+                foreach (var cell in cellRow)
+                {
+                    writer.Write(cell.GetPrintValue());
+                    writer.Write(" ");                    
+                }
+
+                writer.WriteLine();
+            }
         }
 
         private void EvaluateCells()
         {
+            foreach (var cellRow in cellRows)
+            {
+                foreach (var cell in cellRow)
+                {
+                    var value = cell.EvaluatedValue;
+                }
+            }
         }
 
         private void ReadInputSheet(StreamReader reader)
@@ -237,6 +292,26 @@ namespace Excel
         public override string GetPrintValue()
         {
             return ExcelProcessor.EMPTY_CELL_VALUE;
+        }
+
+        protected override int EvaluateValue()
+        {
+            throw new InvalidOperationException("This method is not supposed to be called!");
+        }
+    }
+
+    class ZeroValueCell : Cell
+    {
+        public ZeroValueCell()
+            : base()
+        {
+            // This is already evaluated
+            isEvaluated = true;
+        }
+
+        public override string GetPrintValue()
+        {
+            throw new InvalidOperationException("Zero value cell should not be printed at all!");
         }
 
         protected override int EvaluateValue()
