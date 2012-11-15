@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodexReader", "CodexReader\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Huffman", "Huffman\Huffman.csproj", "{2BBB243A-B509-4FF4-B76B-53EB7E72572C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Excel", "Excel\Excel.csproj", "{978B5DDF-1DE9-4DE3-B35A-A4701802B045}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -31,6 +33,10 @@ Global
 		{2BBB243A-B509-4FF4-B76B-53EB7E72572C}.Debug|x86.Build.0 = Debug|x86
 		{2BBB243A-B509-4FF4-B76B-53EB7E72572C}.Release|x86.ActiveCfg = Release|x86
 		{2BBB243A-B509-4FF4-B76B-53EB7E72572C}.Release|x86.Build.0 = Release|x86
+		{978B5DDF-1DE9-4DE3-B35A-A4701802B045}.Debug|x86.ActiveCfg = Debug|x86
+		{978B5DDF-1DE9-4DE3-B35A-A4701802B045}.Debug|x86.Build.0 = Debug|x86
+		{978B5DDF-1DE9-4DE3-B35A-A4701802B045}.Release|x86.ActiveCfg = Release|x86
+		{978B5DDF-1DE9-4DE3-B35A-A4701802B045}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

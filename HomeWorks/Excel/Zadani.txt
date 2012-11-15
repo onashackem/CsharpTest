@@ -1,0 +1,40 @@
+﻿Napište aplikaci, která dostane vstupní soubor se zjednodušenou excelovskou tabulkou, vyhodnotí všechny vzorce a výsledek uloží opět ve formě tabulky do výstupního souboru. Názvy vstupního a výstupního souboru dostane váš program formou argumentů příkazového řádku. V případě špatného počtu argumentů musí program vypsat na standardní výstup řetězec "Argument Error". Pokud některý ze souborů nejde z jakéhokoli důvodu otevřít, váš program vypíše "File Error".
+
+Tabulka je v souboru uložena následovně. Jeden řádek tabulky je uložen na jednom řádku souboru. Hodnoty v jednotlivých buňkách jsou odděleny jednou nebo více mezerami, každá hodnota je pak zapsána bez mezer. Počet řádků ani sloupců není dopředu znám a každý řádek může obsahovat jiný počet obsazených buněk. Řádky logicky číslujeme od 1 do nekonečna (máte zajištěno, že číslo řádku se vejde do 32 bit. integeru), sloupce značíme velkými písmeny stejně jako v Excelu (A, B, ... Z, AA, AB, ... AZ, BA, BB, ... ZZ, AAA, ...).
+
+Obsahem jednotlivých buněk může být:
+
+Prázdné hranaté závorky [] symbolizují prázdnou buňku. Takovéto explicitně označené prázdné buňky se ve výstupu se musí objevit opět jako prázdné hranaté závorky (jiné prázdné buňky se do výstupu nevypisují).
+Celočíselná nezáporná hodnota, která se vejde do 32 bit znaménkového integeru (jako výsledek výpočtů a tedy i ve výstupním souboru se může objevit hodnota záporná).
+Vzorec začínající znakem = (viz dále).
+Všechny buňky, které nejsou definovány (tj. za poslední buňkou na řádku a za posledním řádkem) chápeme jako také prázdné. Pro účely výpočtů mají všechny prázdné buňky hodnotu 0. Do výstupního souboru přijde kopie celé vstupní tabulky (bez jakýchkoli strukturálních změn, buňky jsou ve výstupním souboru oddělené jednou mezerou), pouze vzorce budou nahrazeny výsledky jejich výpočtů. Pokud nějaká buňka neobsahuje žádný platný vstup (např. obsahuje řetězec), bude její obsah nahrazen řetězcem #INVVAL.
+
+Vzorce začínají znakem =, po kterém následuje infixový zápis binární operace +, -, * nebo / jejíž operandy jsou dvě jiné buňky. Referenci na buňku píšeme ve tvaru SLOUPECřádek. Příklad jednoduchého vzorce je tedy =A1+BC2. Oba operandy musí být reference (není možné např. sčítat buňku s číslem). Všechny operace provádějte celočíselně a dejte pozor na to, že buňka použitá v operandu jednoho vzorce může také obsahovat vzorec (tj. některé buňky je potřeba spočítat dřív než jiné).
+
+Pokud nastane chyba ve výpočtu, program nesmí spadnout, ale na chybu musí vhodně upozornit tak, že jako výsledek chybné operace vloží do příslušné buňky jeden z následujících řetězců:
+
+#ERROR — výpočet nelze provést; nejméně jeden operand nemá platnou hodnotu nebo nejde spočítat
+#DIV0 — při výpočtu došlo k dělení nulou
+#CYCLE — nalezen cyklus (všechny buňky na cyklu musí mít tuto hodnotu). Výsledkem vzorců v buňkách, které nejsou součástí cyklu, ale pouze se na cyklus odkazují bude hodnota #ERROR (pokud je vzorec v takové buňce jinak platný). Můžete počítat s tím, že vstupní tabulka neobsahuje vnořené nebo jinak propletené cykly.
+#MISSOP — v zápisu vzorce chybí operátor
+#FORMULA — nejméně jeden z operandů je chybně zapsán nebo je ve vzorci jiná chyba než #MISSOP
+Při psaní aplikace očekávejte, že máte k dispozici O(N) paměti, kde N je délka vstupního souboru. Vaše řešení by také mělo být rozumě rychlé, tzn. rozhodně byste neměli vyhodnocovat každý vzoreček víc než jednou.
+
+Rozšíření:
+Volitelně můžete naprogramovat následující rozšíření. Implementace řešení včetně rozšíření bude hodnocena 100% bodů, implementace bez rozšíření bude hodnocena 80% bodů. Při adresaci buněk ve vzorcích uvažujme také alternativní formát SESIT!SLOUPECradek, který odkazuje na buňku v jiném sešitě. Každý sešit je v separátním souboru, jehož název je identifikátor sešitu s příponou .sheet. Máme-li např. adresu List1!A2, budeme hledat první buňku na druhém řádku v souboru List1.sheet. Pokud takový soubor neexistuje, nelze operand vyhodnotit a výpočet nelze provést (výsledkem je #ERROR). Ve všech sešitech mohou být také vzorce, a to i s odkazy na jiné sešity včetně hlavního (pozor na cyklické závislosti). Externí sešity ale nemusíte vyhodnocovat celé — stačí spočítat pouze ty hodnoty, které potřebujete pro výpočet vzorců v hlavním sešitě.
+
+
+Příklad:
+$>program.exe sample.sheet sample.eval
+sample.sheet
+    [] 3 =B1*A2
+    19 =C1+C2 42
+    auto
+    =B2/A1 =A1-B4 =C2+A4
+    =chyba =A1+autobus
+sample.eval
+    [] 3 57
+    19 99 42
+    #INVVAL
+    #DIV0 #CYCLE #ERROR
+    #MISSOP #FORMULA
