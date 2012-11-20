@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Collections;
 
 namespace Excel
 {
@@ -22,7 +23,6 @@ namespace Excel
             try
             {
                 new ExcelProcessor().Process(INPUT_SHEET, OUTPUT_SHEET);
-                ;
             }
             catch (Exception e)
             {
@@ -58,28 +58,67 @@ namespace Excel
                 return false;
             }
 
-            // Input parameter is OK
+            // Make sure that we do not write into input file
+            if (inputFile.Equals(outputFile))
+            {
+                return false;
+            }
+
+            // Both parameters are OK
             return true;
         }
     }
 
+    /// <summary>
+    /// Simplified Excel processor
+    /// </summary>
     class ExcelProcessor
     {
-        private readonly LinkedList<Cell[]> cellRows = new LinkedList<Cell[]>();
-
+        /// <summary>
+        /// Value of empty-value cell
+        /// </summary>
         public static readonly string EMPTY_CELL_VALUE = "[]";
 
+        /// <summary>
+        /// Indicates whether a cycle was detected
+        /// </summary>
+        public bool IsCycleDetected { get; private set; }
+
+        /// <summary>
+        /// Cells of the main sheet are loaded into the memory. 
+        /// Allocated to 1000 rows to prevent from often realocation.
+        /// </summary>
+        private readonly List<Cell[]> mainSheet = new List<Cell[]>(1000);
+
+        /// <summary>
+        /// Cached cells from other sheets
+        /// </summary>
+        private readonly Hashtable cachedCells = new Hashtable();
+
+        /// <summary>
+        /// Cell delimiter
+        /// </summary>
         private readonly char[] CELL_DELIMITER = new char[] { ' ' };
 
+        /// <summary>
+        /// Name of the main sheet
+        /// </summary>
         private string INPUT_SHEET_NAME;
 
-        private string EXCEL_SHEETS_PATH;
+        /// <summary>
+        /// The Cell that has finished the cycle
+        /// </summary>
+        private Cell cycleOriginator = null;
 
+        /// <summary>
+        /// Read the main sheet, compute all cells and write it to the output file
+        /// </summary>
+        /// <param name="inputSheet">Input sheet name</param>
+        /// <param name="outputSheet">Output sheet name</param>
         public void Process(string inputSheet, string outputSheet)
         {
-            int pathLength = Math.Max(inputSheet.LastIndexOf('\\'), inputSheet.LastIndexOf('/'));
-            EXCEL_SHEETS_PATH = inputSheet.Substring(0, pathLength + 1);
-            INPUT_SHEET_NAME = inputSheet.Remove(inputSheet.Length - 6).Replace(EXCEL_SHEETS_PATH, "");            
+            // Remove .sheet extension
+            INPUT_SHEET_NAME = inputSheet.Remove(inputSheet.Length - 6);            
 
             using(var reader = new StreamReader(inputSheet))
             using(var writer = new StreamWriter(outputSheet))
@@ -90,96 +129,187 @@ namespace Excel
             }
         }
 
+        /// <summary>
+        /// Finds cell by specified identifier - from input sheet or another sheet.
+        /// </summary>
+        /// <param name="identifier">Cell idetifier: sheet!COLUMNrow, sheet! is optional</param>
+        /// <returns>Returns found cell or null</returns>
         public Cell FindCell(string identifier)
         {
-            // Match inentifier with proper cell regex
-            var match = Regex.Match(identifier, @"([^:]+:)?([A-Z]+)([0-9]+)");
+            int exclamationMarkIndex = identifier.IndexOf("!");
 
-            // Invalid cell identifier
-            if (!match.Success)
+            // Compute column
+            int indexPosition = exclamationMarkIndex;
+            int columnIndex = GetColumnIndex(identifier, ref indexPosition);
+
+            // Compute row index
+            --indexPosition;
+            int rowIndex = GetRowIndex(identifier, ref indexPosition);
+
+            if (columnIndex == 0 || rowIndex == 0)
             {
+                // Either column or row was invalid
                 return null;
             }
 
-            // Row index starts from 1 but indexinf start from 0
-            int rowIndex = Convert.ToInt32(match.Groups[3].ToString()) - 1;
-            int columnIndex = GetColumnIndexFromColumnName(match.Groups[2].ToString().ToUpper());
-            int colonIndex = identifier.IndexOf(":");
-
-            // If cell identifier contains sheet name ...
-            if (colonIndex > 0)
-            {
-                var sheetName = identifier.Substring(0, colonIndex);
-
-                // ... and it is not an input sheet, find the cell in the another file
-                if (!sheetName.Equals(INPUT_SHEET_NAME))
-                    return FindCellInSheet(sheetName, columnIndex, rowIndex);
-            }
-
-            // RowIndex out of bounds
-            if (cellRows.Count <= rowIndex)
-                return new ZeroValueCell();
-
-            // ColumnIndex out of bounds
-            if (cellRows.ElementAt(rowIndex).Length <= columnIndex)
-                return new ZeroValueCell();
-
-            // Return row
-            return cellRows.ElementAt(rowIndex)[columnIndex];
+            // Get cell from sheet (Row and colls indexes start from 1 but collection indexing starts from 0)
+            return FindCellInProperSheet(identifier, --columnIndex, --rowIndex);
         }
 
         /// <summary>
-        /// Converts cell character column indentifier into integer. A -> 1, B -> 2, etc.
+        /// When a cell knows it made a cycle in evaluation, it has to admit to it
         /// </summary>
-        /// <param name="columnName">String column name</param>
-        /// <returns>Returns int column index</returns>
-        private int GetColumnIndexFromColumnName(string columnName)
+        /// <param name="cell">Cell that caused the cycle</param>
+        public void AdmitToCauseCycle(Cell cell)
         {
-            int index = 0;
-            int power = 1;
-            foreach (var c in columnName.Reverse())
+            IsCycleDetected = true;
+            cycleOriginator = cell;
+        }
+
+        /// <summary>
+        /// When a cycle is handled, the cell that caused the cell should stop notify the processor.
+        /// </summary>
+        /// <param name="cell"></param>
+        public void CycleIsSolved(Cell cell)
+        {
+            IsCycleDetected = false;
+            cycleOriginator = null;
+        }
+
+        /// <summary>
+        /// Indicates whether a cell is the cell that caused the cycle
+        /// </summary>
+        /// <param name="cell">Cell candidate</param>
+        /// <returns>Returns true if the cell caused the cycle</returns>
+        public bool IsCycleOriginator(Cell cell)
+        {
+            return cell == cycleOriginator;
+        }
+
+        /// <summary>
+        /// Finds cell by identifier on specified coordinates
+        /// </summary>
+        /// <param name="identifier">Cell identifier</param>
+        /// <param name="columnIndex">Cell column index</param>
+        /// <param name="rowIndex">Cell row index</param>
+        /// <returns>Returns found cell</returns>
+        private Cell FindCellInProperSheet(string identifier, int columnIndex, int rowIndex)
+        {
+            var sheetName = identifier.Substring(0, identifier.IndexOf('!'));
+
+            // If sheet it is not the main sheet, find the cell in the another file and cache it fot further use ...
+            if (!sheetName.Equals(INPUT_SHEET_NAME))
             {
-                // Horner with base 26
-                index += ((int)c - (int)'A') * power;
-                power *= 26;
+                // Add to the cache
+                if (!cachedCells.ContainsKey(identifier))
+                    cachedCells.Add(identifier, FindCellInAnotherSheet(sheetName, columnIndex, rowIndex));
+
+                // Return cached cell
+                return (Cell)cachedCells[identifier];
             }
 
-            return index;
+            // RowIndex out of bounds
+            if (mainSheet.Count <= rowIndex)
+                return new ZeroValueCell();
+
+            // ColumnIndex out of bounds
+            var cellRow = mainSheet[rowIndex];
+            if (cellRow.Length <= columnIndex)
+                return new ZeroValueCell();
+
+            // Return row
+            return cellRow[columnIndex];
+        }
+
+        private int GetRowIndex(string identifier, ref int position)
+        {
+            int rowIndex = 0;
+            while (++position < identifier.Length)
+            {
+                if (identifier[position] >= '0' && identifier[position] <= '9')
+                {
+                    // Horner
+                    rowIndex = rowIndex * 10 + ((int)identifier[position] - (int)'0');
+                    continue;
+                }
+
+                // Invalid char
+                return 0;
+            }
+
+            return rowIndex;
+        }
+
+        private int GetColumnIndex(string identifier, ref int position)
+        {
+            int columnIndex = 0;
+            while (++position < identifier.Length)
+            {
+                if (identifier[position] >= 'A' && identifier[position] <= 'Z')
+                {
+                    // Horner
+                    columnIndex = columnIndex * 26 + ((int)identifier[position] - (int)'A' + 1);
+                    continue;
+                }
+
+                if (identifier[position] >= '0' && identifier[position] <= '9')
+                {
+                    // Valid end of column identifier
+                    return columnIndex;
+                }
+                else
+                {
+                    // Invalid end of column identifier
+                    return 0;
+                }
+            }
+
+            return columnIndex;
         }
 
         /// <summary>
         /// Finds cell in the special sheet file
         /// </summary>
-        /// <param name="sheet">Name of the sheet</param>
+        /// <param name="sheetName">Name of the sheet</param>
         /// <param name="columnIndex">Column index of the cell</param>
         /// <param name="rowIndex">Row index if the cell</param>
         /// <returns>Returns cell if is found</returns>
-        private Cell FindCellInSheet(string sheet, int columnIndex, int rowIndex)
+        private Cell FindCellInAnotherSheet(string sheetName, int columnIndex, int rowIndex)
         {
+            // Fix the difference between Excel indexing and collection indexing
+            rowIndex += 1;
+
             try
             {
-                using(var reader = new StreamReader(String.Format("{0}{1}.sheet", EXCEL_SHEETS_PATH, sheet)))
+                using(var reader = new StreamReader(String.Format("{0}.sheet", sheetName)))
                 {
                     // Skip the proper number on lines
                     string line = String.Empty;
-                    while(--rowIndex >= 0)
+                    while(!reader.EndOfStream && --rowIndex >= 0)
                     {
                         line = reader.ReadLine();
+                    }
+
+                    // Row index out of file
+                    if (reader.EndOfStream && rowIndex > 0)
+                    {
+                        return new ZeroValueCell();
                     }
 
                     // Get cells on the line
                     string[] cells = line.Split(CELL_DELIMITER, StringSplitOptions.RemoveEmptyEntries);
 
                     // Find proper cell
-                    if (cells.Length < columnIndex)
+                    if (columnIndex <= cells.Length)
                     {
-                        return CreateCell(cells[columnIndex - 1]);
+                        return CreateCell(cells[columnIndex], sheetName);
                     }
 
+                    // Column index out of row
                     return new ZeroValueCell();
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return null;
             }
@@ -187,21 +317,25 @@ namespace Excel
 
         private void EvaluateAndWriteCells(StreamWriter writer)
         {
-            foreach (var cellRow in cellRows)
+            foreach (var cellRow in mainSheet)
             {
                 foreach (var cell in cellRow)
                 {
                     // PrintValue prints lazy-evaluated value
                     writer.Write(cell.PrintValue);
 
-                    // Sepatare cell with space
+                    // Sepatare only cell with 1 space
                     if (cell != cellRow[cellRow.Length - 1])
                     {
                         writer.Write(" ");
                     }
                 }
 
-                writer.WriteLine();
+                // Do not end with a new line
+                if (cellRow != mainSheet[mainSheet.Count - 1])
+                {
+                    writer.WriteLine();
+                }
             }
         }
 
@@ -213,26 +347,26 @@ namespace Excel
                 var splittedCellLine = cellLine.Split(CELL_DELIMITER, StringSplitOptions.RemoveEmptyEntries);                
                 var cells = new Cell[splittedCellLine.Length];
                 
-                int index = 0;
+                int index = -1;
                 foreach(var value in splittedCellLine)
                 {
-                    cells[index++] = CreateCell(value);
+                    cells[++index] = CreateCell(value, INPUT_SHEET_NAME);
                 }
 
-                cellRows.AddLast(cells);
+                mainSheet.Add(cells);
             }
         }
 
-        private Cell CreateCell(string value)
+        private Cell CreateCell(string value, string sheetName)
         {
             Cell cell;
-            if (EMPTY_CELL_VALUE == value)
+            if (EMPTY_CELL_VALUE.Equals(value))
             {
                 cell = new EmptyCell();
             }
-            else if (value.StartsWith("="))
+            else if (value[0].Equals('='))
             {
-                cell = new FormulaCell(this, value.Substring(1));
+                cell = new FormulaCell(this, value.Substring(1), sheetName);
             }
             else
             {
@@ -249,17 +383,12 @@ namespace Excel
         /// <summary>
         /// Contains already evalueated value (if is not null)
         /// </summary>
-        protected int evaluatedValue = 0;
-
-        /// <summary>
-        /// Indicates whether the cell has already been evaluated
-        /// </summary>
-        protected bool isEvaluated = false;
+        protected int? evaluatedValue = null;
 
         /// <summary>
         /// Contains some message if the evaluation failed
         /// </summary>
-        protected string errorMessage = string.Empty;
+        protected string errorMessage = ExcelExceptions.None;
 
         /// <summary>
         /// Indicates whether evaluation finished sucessfully
@@ -268,7 +397,7 @@ namespace Excel
         {
             get
             {
-                return String.IsNullOrEmpty(errorMessage);
+                return errorMessage.Equals(ExcelExceptions.None);
             }
         }
 
@@ -279,12 +408,18 @@ namespace Excel
         {
             get
             {
+                // First evaluate cell if is not
+                string evalueatedValue = EvaluatedValue.ToString();
+
+                // Check for error during evaluation progress
                 if (!HasEvaluationSucceeded)
                 {
+                    // Error occured -> show message
                     return errorMessage;
                 }
 
-                return EvaluatedValue.ToString();
+                // Return evaluated value
+                return evalueatedValue;
             }
         }
 
@@ -296,25 +431,14 @@ namespace Excel
             get
             {
                 // Lazy evauation of the cell prevents from evaluating the value twice
-                if (!isEvaluated)
-                {
-                    try
-                    {
-                        // Remember evaluated value
-                        evaluatedValue = EvaluateValue();
-                    }
-                    catch(ExcelException ex)
-                    {
-                        // An exception during evaluation is also an cell value
-                        errorMessage = ex.Message;
-                    }
-
-                    // No matter if evaluation fails, cell is be evaluated
-                    isEvaluated = true;
+                if (!evaluatedValue.HasValue)
+                {                   
+                    // Remember evaluated value
+                    evaluatedValue = EvaluateValue();
                 }
 
                 // Return evaluated value
-                return evaluatedValue;
+                return evaluatedValue.Value;
             }
         }
 
@@ -334,8 +458,8 @@ namespace Excel
         public EmptyCell() 
             : base()
         {
-            // This is already evaluated
-            isEvaluated = true;
+            // Value of an empty cell is 0;
+            evaluatedValue = 0;
         }
 
         public override string PrintValue
@@ -360,8 +484,8 @@ namespace Excel
         public ZeroValueCell()
             : base()
         {
-            // This is already evaluated
-            isEvaluated = true;
+            // Value of an empty cell is 0;
+            evaluatedValue = 0;
         }
 
         public override string PrintValue
@@ -388,17 +512,15 @@ namespace Excel
         {
             // Value can be either int or string
             int intValue;
-            if (Int32.TryParse(value, out intValue))
+            if (Int32.TryParse(value, out intValue) && intValue >= 0)
             {
                 evaluatedValue = intValue;
             }
             else
             {
-                errorMessage = new ExcelInvalidValueException().Message;
+                errorMessage = ExcelExceptions.InvalidValueException;
+                evaluatedValue = 0;
             }
-
-            // Value is either int (is parsed) or string (error is set)
-            isEvaluated = true;
         }
 
         protected override int EvaluateValue()
@@ -413,14 +535,16 @@ namespace Excel
     class FormulaCell : Cell
     {
         private ExcelProcessor processor;
-        private String originalValue;
-        private bool isBeingEvaluatedNow = false;
+        private string originalValue;
+        private string sheetName;
+        private bool isBeingEvaluated = false;
 
-        public FormulaCell(ExcelProcessor processor, string value)
+        public FormulaCell(ExcelProcessor processor, string value, string sheetName)
             : base()
         {
             this.processor = processor;
             this.originalValue = value;
+            this.sheetName = sheetName;
         }
 
         protected override int EvaluateValue()
@@ -434,50 +558,81 @@ namespace Excel
             int operatorPosition = Math.Max(indexOfPlus, Math.Max(indexOfMinus, Math.Max(indexOfMul, indexOfDiv)));
             if (-1 == operatorPosition)
             {
-                throw new ExcelMissingOperatorException();
+                errorMessage = ExcelExceptions.MissingOperatorException;
+                return 0;
             }
 
-            // Check operans presence
+            // Check operand presence
             var firstOperand = originalValue.Substring(0, operatorPosition);
             var secondOperand = originalValue.Substring(operatorPosition + 1);
             if (String.IsNullOrEmpty(firstOperand) || String.IsNullOrEmpty(secondOperand))
             {
-                throw new ExcelMissingOperatorException();
+                errorMessage = ExcelExceptions.MissingOperatorException;
+                return 0;
             }
 
-            var firstCell = processor.FindCell(firstOperand);
-            var secondCell = processor.FindCell(secondOperand);
+            // Find cells in proper sheet (if sheet not specified, sheet of this cell is default)
+            var firstCell = processor.FindCell(PrependSheetNameIfMissing(firstOperand, sheetName));
+            var secondCell = processor.FindCell(PrependSheetNameIfMissing(secondOperand, sheetName));
             char operatorSign = this.originalValue[operatorPosition];
 
             // If any cell was not found (bad identifier)
             if (firstCell == null || secondCell == null)
             {
-                throw new ExcelInvalidFormulaException();
+                errorMessage = ExcelExceptions.InvalidFormulaException;
+                return 0;
             }
 
+            // Evaluate current cell
             return Evaluate(firstCell, secondCell, operatorSign);
+        }
+
+        private string PrependSheetNameIfMissing(string operand, string sheetName)
+        {
+            //Sheet already present
+            if (operand.IndexOf('!') > 0)
+            {
+                return operand;
+            }
+
+            // Prepend sheetname in proper format
+            return String.Format("{0}!{1}", sheetName, operand);
         }
 
         private int Evaluate(Cell firstCell, Cell secondCell, char operatorSign)
         {
-            string cycleMessage = new ExcelCycleException().Message;
-
-            // Cycle detected
-            if (isBeingEvaluatedNow)
+            // Cycle detected?
+            if (isBeingEvaluated)
             {
-                errorMessage = cycleMessage;
+                processor.AdmitToCauseCycle(this);
+
+                errorMessage = ExcelExceptions.CycleException;
                 return 0;
             }
 
-            // Cycle detection
-            isBeingEvaluatedNow = true;
+            // Start cycle detection of this cell
+            isBeingEvaluated = true;
 
+            // Evaluate first and second cell
             int firstValue = firstCell.EvaluatedValue;
             int secondValue = secondCell.EvaluatedValue;
+            
+            // Stop cycle detection of this cell
+            isBeingEvaluated = false;
 
-            // Stop cycle detection
-            isBeingEvaluatedNow = false;
+            // End cycle detection
+            if (processor.IsCycleDetected)
+            {
+                if (processor.IsCycleOriginator(this))
+                {
+                    processor.CycleIsSolved(this);
+                }
 
+                errorMessage = ExcelExceptions.CycleException;
+                return 0;
+            }
+
+            // Evaluate cell from properly evaluated values
             if (firstCell.HasEvaluationSucceeded && secondCell.HasEvaluationSucceeded)
             {
                 // Compute cell value
@@ -493,7 +648,8 @@ namespace Excel
                         // Check for division by zero
                         if (0 == secondValue)
                         {
-                            throw new ExcelDivisionByZeroException();
+                            errorMessage = ExcelExceptions.DivisionByZeroException;
+                            return 0;
                         }
 
                         // Division is safe
@@ -501,57 +657,34 @@ namespace Excel
                 }
             }
 
-            // Error occured
-            if (firstCell.PrintValue == cycleMessage || secondCell.PrintValue == cycleMessage)
-            {
-                errorMessage = cycleMessage;
-            }
-            else
-            {
-                errorMessage = new ExcelErrorException().Message;
-            }
+            // Error occured            
+            errorMessage = ExcelExceptions.ErrorException;
             return 0;
         }
     }
 
     #endregion
-
     
     #region Exceptions
 
-    class ExcelException : Exception
+    /// <summary>
+    /// Enum class for exception messages
+    /// </summary>
+    public sealed class ExcelExceptions
     {
-        protected ExcelException(string message) : base (message) { }
-    }
+        public static string None { get { return String.Empty; } }
 
-    class ExcelErrorException : ExcelException
-    {
-        public ExcelErrorException() : base("#ERROR") { }
-    }
+        public static string ErrorException { get { return "#ERROR"; } }
+        
+        public static string DivisionByZeroException { get { return "#DIV0"; } }
+    
+        public static string CycleException { get { return "#CYCLE"; } }
+        
+        public static string MissingOperatorException { get { return "#MISSOP"; } }
+        
+        public static string InvalidFormulaException { get { return "#FORMULA"; } }
 
-    class ExcelDivisionByZeroException : ExcelException
-    {
-        public ExcelDivisionByZeroException() : base("#DIV0") { }
-    }
-
-    class ExcelCycleException : ExcelException
-    {
-        public ExcelCycleException() : base("#CYCLE") { }
-    }
-
-    class ExcelMissingOperatorException : ExcelException
-    {
-        public ExcelMissingOperatorException() : base("#MISSOP") { }
-    }
-
-    class ExcelInvalidFormulaException : ExcelException
-    {
-        public ExcelInvalidFormulaException() : base("#FORMULA") { }
-    }
-
-    class ExcelInvalidValueException : ExcelException
-    {
-        public ExcelInvalidValueException() : base("#INVVAL") { }
+        public static string InvalidValueException { get { return "#INVVAL"; } }
     }
 
     #endregion
