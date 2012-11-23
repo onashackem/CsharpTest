@@ -5,11 +5,11 @@
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{978B5DDF-1DE9-4DE3-B35A-A4701802B045}</ProjectGuid>
+    <ProjectGuid>{F4DCBC80-B570-4291-B975-96ACC65A0880}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Excel</RootNamespace>
-    <AssemblyName>Excel</AssemblyName>
+    <RootNamespace>ExpressionEvaluation</RootNamespace>
+    <AssemblyName>ExpressionEvaluation</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>Client</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
@@ -43,18 +43,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Excel.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Zadani.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="tests\excel.eval" />
-    <None Include="tests\excel.my.eval" />
-    <None Include="tests\excel.sheet" />
-    <None Include="tests\excel1.sheet" />
-    <None Include="tests\excel2.sheet" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

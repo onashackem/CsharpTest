@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Huffman", "Huffman\Huffman.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Excel", "Excel\Excel.csproj", "{978B5DDF-1DE9-4DE3-B35A-A4701802B045}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpressionEvaluation", "ExpressionEvaluation\ExpressionEvaluation.csproj", "{F4DCBC80-B570-4291-B975-96ACC65A0880}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -37,6 +39,10 @@ Global
 		{978B5DDF-1DE9-4DE3-B35A-A4701802B045}.Debug|x86.Build.0 = Debug|x86
 		{978B5DDF-1DE9-4DE3-B35A-A4701802B045}.Release|x86.ActiveCfg = Release|x86
 		{978B5DDF-1DE9-4DE3-B35A-A4701802B045}.Release|x86.Build.0 = Release|x86
+		{F4DCBC80-B570-4291-B975-96ACC65A0880}.Debug|x86.ActiveCfg = Debug|x86
+		{F4DCBC80-B570-4291-B975-96ACC65A0880}.Debug|x86.Build.0 = Debug|x86
+		{F4DCBC80-B570-4291-B975-96ACC65A0880}.Release|x86.ActiveCfg = Release|x86
+		{F4DCBC80-B570-4291-B975-96ACC65A0880}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
