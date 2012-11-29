@@ -9,41 +9,104 @@ namespace ExpressionEvaluation
     {
         static void Main(string[] args)
         {
-            try
-			{   
-                // Read, parse and evaluate expression
-                var evaluator =  new PreorderExpressionEvaluator();
-                int result = evaluator.EvaluateExpression(new ExpressionParser(Console.ReadLine()));
-                
-                Console.WriteLine(result);
-			}
-            catch (System.OverflowException)
+            var builder = new PreorderExpressionBuilder();
+            var intVisitor = new IntExpressionVisitor();
+            var doubleVisitor = new DoubleExpressionVisitor();
+            IExpression expression = null;
+
+            // Read commands until the end
+            string command;
+            while ((command = Console.ReadLine()) != null && !command.Equals("end", StringComparison.InvariantCultureIgnoreCase))
             {
-                // Overflow exception during evaluation
-                Console.WriteLine(new OverflowException().Message);
+                try
+                {
+                    if (command.Length > 0)
+                    {
+                        switch (command[0])
+                        {
+                            // Evaluate expression in integer domain
+                            case 'i':
+                                if (expression == null)
+                                {
+                                    Console.WriteLine(new ExpressionMissing().Message);
+                                    break;
+                                }
+
+                                Console.WriteLine(expression.AcceptVisitor(intVisitor));
+                                break;
+
+                            // Evaluate expression in a floating point
+                            case 'd':
+                                if (expression == null)
+                                {
+                                    Console.WriteLine(new ExpressionMissing().Message);
+                                    break;
+                                }
+
+                                Console.WriteLine( String.Format("{0:N5}", expression.AcceptVisitor(doubleVisitor)));
+                                break;
+
+                            default:
+
+                                if (command[0] == '=')
+                                {
+                                    // Read, parse and evaluate expression
+                                    var parser = new ExpressionParser(command.Substring(1));
+                                    expression = builder.BuildExpression(parser);
+                                    break;
+                                }
+                                else
+                                {
+                                    Console.WriteLine(new FormatException().Message);
+                                }
+                                break;
+                        }
+                    }
+                }
+                catch (System.OverflowException)
+                {
+                    // Overflow exception during evaluation
+                    Console.WriteLine(new OverflowException().Message);
+                }
+                catch (EvaluationException ex)
+                {
+                    // Some other exception
+                    Console.WriteLine(ex.Message);
+                }
             }
-			catch(EvaluationException ex)
-			{
-                // Some other exception
-				Console.WriteLine(ex.Message);
-			} 
+
         }
     }
 
+    /*
     /// <summary>
     /// Evaluator works with preorder formated expression
     /// </summary>
     class PreorderExpressionEvaluator : IExpressionEvaluator
     {
         /// <summary>
-        /// Builds expression from tokens parsed by parser.
+        /// Builds expression from tokens parsed by parser and evaluates it.
         /// </summary>
+        /// <param name="builder">Builder that uses parser to build an expression</param>
         /// <param name="parser">Parser to get tokens from</param>
         /// <returns>Returns evaluated expression</returns>
-        public int EvaluateExpression(IExpressionParser parser)
+        public int EvaluateExpression(IExpressionBuider builder, IExpressionParser parser)
         {
-            // Build expression
-            Expression expression = BuildExpression(parser);
+            return builder.BuildExpression(parser).Value;
+        }
+    }
+     */
+
+    class PreorderExpressionBuilder : IExpressionBuider
+    {
+        /// <summary>
+        /// Builds expression
+        /// </summary>
+        /// <param name="parser">Expression parser to get tokens from</param>
+        /// <returns>Returns built expression</returns>
+        public IExpression BuildExpression(IExpressionParser parser)
+        {
+            var expression = BuildExpressionNode(parser);
 
             // Some tokens are not processed
             if (parser.GetNextToken() != null)
@@ -51,15 +114,10 @@ namespace ExpressionEvaluation
                 throw new FormatException();
             }
 
-            return expression.Value;
+            return expression;
         }
 
-        /// <summary>
-        /// Recursively builds expression
-        /// </summary>
-        /// <param name="parser">Expression parser to get tokens from</param>
-        /// <returns>Returns built expression</returns>
-        private Expression BuildExpression(IExpressionParser parser)
+        private Expression BuildExpressionNode(IExpressionParser parser)
         {
             String token = parser.GetNextToken();
 
@@ -72,15 +130,15 @@ namespace ExpressionEvaluation
             switch (token)
             {
                 case "+":
-                    return new PlusExpression(BuildExpression(parser), BuildExpression(parser));
+                    return new PlusExpression(BuildExpressionNode(parser), BuildExpressionNode(parser));
                 case "-":
-                    return new MinusExpression(BuildExpression(parser), BuildExpression(parser));
+                    return new MinusExpression(BuildExpressionNode(parser), BuildExpressionNode(parser));
                 case "*":
-                    return new MultiplyExpression(BuildExpression(parser), BuildExpression(parser));
+                    return new MultiplyExpression(BuildExpressionNode(parser), BuildExpressionNode(parser));
                 case "/":
-                    return new DivideExpression(BuildExpression(parser), BuildExpression(parser));
+                    return new DivideExpression(BuildExpressionNode(parser), BuildExpressionNode(parser));
                 case "~":
-                    return new UnaryMinusExpression(BuildExpression(parser));
+                    return new UnaryMinusExpression(BuildExpressionNode(parser));
 
                 default: // Number
                     int val;
@@ -130,13 +188,87 @@ namespace ExpressionEvaluation
         }
     }
 
+    #region Visitors
+
+    class IntExpressionVisitor : IExpressionVisitor<int>
+    {
+        public int Visit(ValueExpression expression)
+        {
+            return expression.Value;
+        }
+
+        public int Visit(UnaryExpression expression)
+        {
+            checked { return expression.Operand.AcceptVisitor(this) * -1; }
+        }
+
+        public int Visit(PlusExpression expression)
+        {
+            checked { return expression.LeftOperand.AcceptVisitor(this) + expression.RightOperand.AcceptVisitor(this); }
+        }
+
+        public int Visit(MinusExpression expression)
+        {
+            checked { return expression.LeftOperand.AcceptVisitor(this) - expression.RightOperand.AcceptVisitor(this); }
+        }
+
+        public int Visit(MultiplyExpression expression)
+        {
+            checked { return expression.LeftOperand.AcceptVisitor(this) * expression.RightOperand.AcceptVisitor(this); }
+        }
+
+        public int Visit(DivideExpression expression)
+        {
+            checked { return expression.LeftOperand.AcceptVisitor(this) / expression.RightOperand.AcceptVisitor(this); }
+        }
+    }
+
+    class DoubleExpressionVisitor : IExpressionVisitor<double>
+    {
+        public double Visit(ValueExpression expression)
+        {
+            return expression.Value * 1.0;
+        }
+
+        public double Visit(UnaryExpression expression)
+        {
+            return expression.Operand.AcceptVisitor(this) * -1.0;
+        }
+
+        public double Visit(PlusExpression expression)
+        {
+            return expression.LeftOperand.AcceptVisitor(this) + expression.RightOperand.AcceptVisitor(this);
+        }
+
+        public double Visit(MinusExpression expression)
+        {
+            return expression.LeftOperand.AcceptVisitor(this) - expression.RightOperand.AcceptVisitor(this);
+        }
+
+        public double Visit(MultiplyExpression expression)
+        {
+            return expression.LeftOperand.AcceptVisitor(this) * expression.RightOperand.AcceptVisitor(this);
+        }
+
+        public double Visit(DivideExpression expression)
+        {
+            return expression.LeftOperand.AcceptVisitor(this) / expression.RightOperand.AcceptVisitor(this);
+        }
+    }
+    
+
+    #endregion
+
     #region expressions
 
     /// <summary>
     /// Basic IExpression implementation. Value is evaluated and remembered for further evaluation.
     /// </summary>
-    abstract class Expression
+    abstract class Expression: IExpression
     {
+        public abstract T AcceptVisitor<T>(IExpressionVisitor<T> visitor);
+
+        /*
         /// <summary>
         /// If defined, contains evaluated value
         /// </summary>
@@ -164,6 +296,7 @@ namespace ExpressionEvaluation
         /// </summary>
         /// <returns>Returns calculated value</returns>
         protected abstract int Evaluate();
+         * */
     }
 
     /// <summary>
@@ -223,10 +356,17 @@ namespace ExpressionEvaluation
         {
         }
 
+        public override T AcceptVisitor<T>(IExpressionVisitor<T> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        /*
         protected override int Evaluate()
         {
             checked { return Operand.Value * -1; };
         }
+         * */
     }
 
     /// <summary>
@@ -234,16 +374,25 @@ namespace ExpressionEvaluation
     /// </summary>
     class ValueExpression : UnaryExpression
     {
+        public int Value { get; private set; }
+
         public ValueExpression(int operandValue)
             : base(null)
         {
-            value = operandValue;
+            Value = operandValue;
         }
 
+        public override T AcceptVisitor<T>(IExpressionVisitor<T> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        /*
         protected override int Evaluate()
         {
             throw new InvalidOperationException("This method should not be called.");
         }
+         * */
     }
 
     /// <summary>
@@ -256,10 +405,17 @@ namespace ExpressionEvaluation
         {
         }
 
+        public override T AcceptVisitor<T>(IExpressionVisitor<T> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        /*
         protected override int Evaluate()
         {
             checked { return LeftOperand.Value + RightOperand.Value; }
         }
+         * */
     }
 
     /// <summary>
@@ -272,10 +428,17 @@ namespace ExpressionEvaluation
         {
         }
 
+        public override T AcceptVisitor<T>(IExpressionVisitor<T> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        /*
         protected override int Evaluate()
         {
             checked { return LeftOperand.Value - RightOperand.Value; }
         }
+         * */
     }
 
     /// <summary>
@@ -288,10 +451,17 @@ namespace ExpressionEvaluation
         {
         }
 
+        public override T AcceptVisitor<T>(IExpressionVisitor<T> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        /*
         protected override int Evaluate()
         {
             checked { return LeftOperand.Value * RightOperand.Value; }
         }
+         * */
     }
 
     /// <summary>
@@ -304,6 +474,12 @@ namespace ExpressionEvaluation
         {
         }
 
+        public override T AcceptVisitor<T>(IExpressionVisitor<T> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        /*
         protected override int Evaluate()
         {
             int left = LeftOperand.Value;
@@ -316,6 +492,7 @@ namespace ExpressionEvaluation
 
             checked { return left / right; };
         }
+         */
     }
 
     #endregion
@@ -354,16 +531,52 @@ namespace ExpressionEvaluation
         public FormatException() : base("Format Error") { }
     }
 
+    /// <summary>
+    /// Indicated that an expression to evaluate is missing
+    /// </summary>
+    class ExpressionMissing : EvaluationException
+    {
+        public ExpressionMissing() : base("Expression Missing") { }
+    }
+
     #endregion
 
     #region interfaces
+
+    interface IExpressionVisitor<T>
+    {
+        T Visit(ValueExpression expression);
+
+        T Visit(UnaryExpression expression);
+
+        T Visit(PlusExpression expression);
+
+        T Visit(MinusExpression expression);
+
+        T Visit(MultiplyExpression expression);
+
+        T Visit(DivideExpression expression);
+    }
 
     /// <summary>
     /// Defines interface for all expressions.
     /// </summary>
     interface IExpression
     {
-        int Value { get; }
+        //double Value { get; }
+
+        /// <summary>
+        /// Accepts invitation of visitor to visit it;
+        /// </summary>
+        /// <typeparam name="T">Return type of visitor</typeparam>
+        /// <param name="visitor">Visitor to visit</param>
+        /// <returns>Returns result of visit</returns>
+        T AcceptVisitor<T>(IExpressionVisitor<T> visitor);
+    }
+
+    interface IExpressionBuider
+    {
+        IExpression BuildExpression(IExpressionParser parser);
     }
     
     /// <summary>
@@ -371,7 +584,7 @@ namespace ExpressionEvaluation
     /// </summary>
     interface IExpressionEvaluator
     {
-        int EvaluateExpression(IExpressionParser parser);
+        int EvaluateExpression(IExpressionBuider builder, IExpressionParser parser);
     }
 
     /// <summary>
