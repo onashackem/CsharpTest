@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Globalization;
+using System.IO;
 
 namespace ExpressionEvaluation
 {
@@ -14,67 +16,164 @@ namespace ExpressionEvaluation
             var doubleVisitor = new DoubleExpressionVisitor();
             IExpression expression = null;
 
+            // Set culture explicitely - because of CodEx ...
+            var enUS = new System.Globalization.CultureInfo("en-US");
+            /*
+
+            Console.WriteLine(Double.MaxValue);
+            Console.WriteLine((1000.0).ToString("######.00000"));
+            Console.WriteLine(Double.NaN.ToString("N5", CultureInfo.CreateSpecificCulture("en-US"))));
+            Console.WriteLine(String.Format("01: {0:N5}", Double.NegativeInfinity.ToString("N5", CultureInfo.CreateSpecificCulture("en-US"))));
+            Console.WriteLine(String.Format("02: {0:N5}", Double.PositiveInfinity.ToString()));
+            Console.WriteLine(String.Format("03: {0:N5}", Double.NegativeInfinity.ToString()));
+            Console.WriteLine(String.Format("04: {0:N5}", 10.0 / 0.0));
+            Console.WriteLine(String.Format("05: {0:N5}", 10.0 / -0.0));
+            Console.WriteLine(String.Format("06: {0:N5}", Double.NegativeInfinity / Double.PositiveInfinity));
+            Console.WriteLine(String.Format("07: {0:N5}", Double.NegativeInfinity / Double.NaN));
+            Console.WriteLine(String.Format("08: {0:N5}", Double.NaN / Double.NegativeInfinity));
+            Console.WriteLine(String.Format("09: {0:N5}", 1.0 / Double.PositiveInfinity));
+            Console.WriteLine(String.Format("10: {0:N5}", Double.NegativeInfinity / -5.5));
+            Console.WriteLine(String.Format("11: {0:N5}", Double.NaN / -10.0));
+            Console.WriteLine(String.Format("12: {0:N5}", -10.0 / Double.NaN));
+            Console.WriteLine(String.Format("13: {0:N5}", -1.0 / Double.PositiveInfinity));
+            Console.WriteLine(String.Format("14: {0:N5}", 1.0 / Double.NegativeInfinity));
+
+            Console.WriteLine();
+            */
+
             // Read commands until the end
             string command;
-            while ((command = Console.ReadLine()) != null && !command.Equals("end", StringComparison.InvariantCultureIgnoreCase))
+            while ((command = Console.ReadLine()) != null && !command.Equals("end"))
             {
-                try
+                // No command - skip
+                if (command.Length == 0)
                 {
-                    if (command.Length > 0)
-                    {
-                        switch (command[0])
+                    continue;
+                }
+
+                switch (command[0])
+                {
+                    // Evaluate expression in integer mode
+                    case 'i':
+                        if (command.Length > 1)
                         {
-                            // Evaluate expression in integer domain
-                            case 'i':
-                                if (expression == null)
-                                {
-                                    Console.WriteLine(new ExpressionMissing().Message);
-                                    break;
-                                }
-
-                                Console.WriteLine(expression.AcceptVisitor(intVisitor));
-                                break;
-
-                            // Evaluate expression in a floating point
-                            case 'd':
-                                if (expression == null)
-                                {
-                                    Console.WriteLine(new ExpressionMissing().Message);
-                                    break;
-                                }
-
-                                Console.WriteLine( String.Format("{0:N5}", expression.AcceptVisitor(doubleVisitor)));
-                                break;
-
-                            default:
-
-                                if (command[0] == '=')
-                                {
-                                    // Read, parse and evaluate expression
-                                    var parser = new ExpressionParser(command.Substring(1));
-                                    expression = builder.BuildExpression(parser);
-                                    break;
-                                }
-                                else
-                                {
-                                    Console.WriteLine(new FormatException().Message);
-                                }
-                                break;
+                            // Incorrect command
+                            Console.WriteLine(new FormatException().Message);
+                            break;
                         }
-                    }
-                }
-                catch (System.OverflowException)
-                {
-                    // Overflow exception during evaluation
-                    Console.WriteLine(new OverflowException().Message);
-                }
-                catch (EvaluationException ex)
-                {
-                    // Some other exception
-                    Console.WriteLine(ex.Message);
-                }
-            }
 
+                        if (expression == null)
+                        {
+                            Console.WriteLine(new ExpressionMissing().Message);
+                            break;
+                        }
+
+                        EvaluateIntegerExpression(intVisitor, expression);
+                        break;
+
+                    // Evaluate expression in a floating point mode
+                    case 'd':
+                        if (command.Length > 1)
+                        {
+                            // Incorrect command
+                            Console.WriteLine(new FormatException().Message);
+                            break;
+                        }
+
+                        if (expression == null)
+                        {
+                            Console.WriteLine(new ExpressionMissing().Message);
+                            break;
+                        }
+
+                        Console.WriteLine(expression.AcceptVisitor(doubleVisitor).ToString("#.00000", enUS));
+                        break;
+
+                    // Evaluate expression in a floating point mode
+                    case 'p':
+                        if (command.Length > 1)
+                        {
+                            // Incorrect command
+                            Console.WriteLine(new FormatException().Message);
+                            break;
+                        }
+
+                        if (expression == null)
+                        {
+                            Console.WriteLine(new ExpressionMissing().Message);
+                            break;
+                        }
+
+                        expression.AcceptVisitor(new MaximumParenthesesVisitor());
+                        Console.WriteLine();
+                        break;
+
+                    // Evaluate expression in a floating point mode
+                    case 'P':
+                        if (command.Length > 1)
+                        {
+                            // Incorrect command
+                            Console.WriteLine(new FormatException().Message);
+                            break;
+                        }
+
+                        if (expression == null)
+                        {
+                            Console.WriteLine(new ExpressionMissing().Message);
+                            break;
+                        }
+                        
+                        expression.AcceptVisitor(new MinimumParenthesesVisitor());
+                        Console.WriteLine();
+                        break;
+
+                    default:
+                        // Forget the expression
+                        expression = null;
+
+                        if (command[0] == '=')
+                        {
+                            // Read, parse and evaluate expression
+                            var parser = new ExpressionParser(command.Substring(1));
+                            try
+                            {
+                                expression = builder.BuildExpression(parser);
+
+                                // Expression is parsed correctly
+                                if (expression != null)
+                                {
+                                    break;
+                                }
+                            }
+                            catch (FormatException)
+                            {
+                                // Do nothing, format error is reported via next line
+                            }
+                        }
+
+                        // Incorrect command or incorrect expression
+                        Console.WriteLine(new FormatException().Message);
+                        break;
+                }                
+            }
+        }
+
+        private static void EvaluateIntegerExpression(IntExpressionVisitor intVisitor, IExpression expression)
+        {
+            try
+            {
+                Console.WriteLine(expression.AcceptVisitor(intVisitor));
+            }
+            catch (System.OverflowException)
+            {
+                // Overflow exception during evaluation
+                Console.WriteLine(new OverflowException().Message);
+            }
+            catch (DivideByZeroException ex)
+            {
+                // Some other exception
+                Console.WriteLine(ex.Message);
+            }
         }
     }
 
@@ -111,7 +210,7 @@ namespace ExpressionEvaluation
             // Some tokens are not processed
             if (parser.GetNextToken() != null)
             {
-                throw new FormatException();
+                return null;
             }
 
             return expression;
@@ -190,6 +289,144 @@ namespace ExpressionEvaluation
 
     #region Visitors
 
+    class MinimumParenthesesVisitor : IExpressionVisitor<bool>
+    {
+        private TextWriter output = Console.Out;
+        //= - 1 - 2 * + 3 4 * + 5 6 - 7 + 8 - 8 ~ 1
+
+        public bool Visit(ValueExpression expression)
+        {
+            output.Write(expression.Value);
+            return false;
+        }
+
+        public bool Visit(UnaryMinusExpression expression)
+        {
+            WrapInBrackets(expression);
+            return true;
+        }
+
+        public bool Visit(PlusExpression expression)
+        {
+            WrapInBrackets(expression, '+');
+            return true;
+        }
+
+        public bool Visit(MinusExpression expression)
+        {
+            WrapInBrackets(expression, '-');
+            return true;
+        }
+
+        public bool Visit(MultiplyExpression expression)
+        {
+            WrapInBrackets(expression, '*');
+            return true;
+        }
+
+        public bool Visit(DivideExpression expression)
+        {
+            WrapInBrackets(expression, '/');
+            return true;
+        }
+
+        private void WrapInBrackets(BinaryExpression expression, char oper)
+        {
+            var leftOperand = expression.LeftOperand;
+            var rightOperand = expression.RightOperand;
+
+            if (leftOperand.OperatorPriority < expression.OperatorPriority)
+            {
+                output.Write("(");
+                leftOperand.AcceptVisitor(this);
+                output.Write(")");
+            }
+            else
+            {
+                leftOperand.AcceptVisitor(this);
+            }
+
+            output.Write(oper);
+
+            if (rightOperand.OperatorPriority < expression.OperatorPriority)
+            {
+                output.Write("(");
+                rightOperand.AcceptVisitor(this);
+                output.Write(")");
+            }
+            else
+            {
+                rightOperand.AcceptVisitor(this);
+            }
+        }
+
+        private void WrapInBrackets(UnaryMinusExpression expression)
+        {
+            output.Write("(");
+            output.Write("-");
+            expression.Operand.AcceptVisitor(this);
+            output.Write(")");
+        }
+    }
+
+    class MaximumParenthesesVisitor : IExpressionVisitor<bool>
+    {
+        private TextWriter output = Console.Out;
+
+        public bool Visit(ValueExpression expression)
+        {
+            output.Write(expression.Value);
+            return false;
+        }
+
+        public bool Visit(UnaryMinusExpression expression)
+        {
+            WrapInBrackets(expression);
+            return true;
+        }
+
+        public bool Visit(PlusExpression expression)
+        {
+            WrapInBrackets(expression, '+');
+            return true;
+        }
+
+        public bool Visit(MinusExpression expression)
+        {
+            WrapInBrackets(expression, '-');
+            return true;
+        }
+
+        public bool Visit(MultiplyExpression expression)
+        {
+            WrapInBrackets(expression, '*');
+            return true;
+        }
+
+        public bool Visit(DivideExpression expression)
+        {
+            WrapInBrackets(expression, '/');
+            return true;
+        }
+
+        private void WrapInBrackets(BinaryExpression expression, char oper)
+        {
+            output.Write("(");
+            expression.LeftOperand.AcceptVisitor(this);
+            output.Write(oper);
+            expression.RightOperand.AcceptVisitor(this);
+            output.Write(")");
+        }
+
+        private void WrapInBrackets(UnaryMinusExpression expression)
+        {
+            output.Write("(");
+            output.Write("-");
+            expression.Operand.AcceptVisitor(this);
+            output.Write(")");
+        }
+    }
+
     class IntExpressionVisitor : IExpressionVisitor<int>
     {
         public int Visit(ValueExpression expression)
@@ -197,7 +434,7 @@ namespace ExpressionEvaluation
             return expression.Value;
         }
 
-        public int Visit(UnaryExpression expression)
+        public int Visit(UnaryMinusExpression expression)
         {
             checked { return expression.Operand.AcceptVisitor(this) * -1; }
         }
@@ -219,7 +456,14 @@ namespace ExpressionEvaluation
 
         public int Visit(DivideExpression expression)
         {
-            checked { return expression.LeftOperand.AcceptVisitor(this) / expression.RightOperand.AcceptVisitor(this); }
+            int rightValue = expression.RightOperand.AcceptVisitor(this);
+
+            if (rightValue == 0)
+            {
+                throw new DivideByZeroException();
+            }
+
+            checked { return expression.LeftOperand.AcceptVisitor(this) / rightValue; }
         }
     }
 
@@ -230,7 +474,7 @@ namespace ExpressionEvaluation
             return expression.Value * 1.0;
         }
 
-        public double Visit(UnaryExpression expression)
+        public double Visit(UnaryMinusExpression expression)
         {
             return expression.Operand.AcceptVisitor(this) * -1.0;
         }
@@ -254,8 +498,7 @@ namespace ExpressionEvaluation
         {
             return expression.LeftOperand.AcceptVisitor(this) / expression.RightOperand.AcceptVisitor(this);
         }
-    }
-    
+    }    
 
     #endregion
 
@@ -267,6 +510,8 @@ namespace ExpressionEvaluation
     abstract class Expression: IExpression
     {
         public abstract T AcceptVisitor<T>(IExpressionVisitor<T> visitor);
+
+        public int OperatorPriority { get; protected set; }
 
         /*
         /// <summary>
@@ -351,9 +596,11 @@ namespace ExpressionEvaluation
     /// </summary>
     class UnaryMinusExpression : UnaryExpression
     {
+
         public UnaryMinusExpression(Expression operand)
             : base(operand)
         {
+            OperatorPriority = 1;
         }
 
         public override T AcceptVisitor<T>(IExpressionVisitor<T> visitor)
@@ -380,6 +627,7 @@ namespace ExpressionEvaluation
             : base(null)
         {
             Value = operandValue;
+            OperatorPriority = 1000;
         }
 
         public override T AcceptVisitor<T>(IExpressionVisitor<T> visitor)
@@ -403,6 +651,7 @@ namespace ExpressionEvaluation
         public PlusExpression(Expression left, Expression right)
             : base(left, right)
         {
+            OperatorPriority = 2;
         }
 
         public override T AcceptVisitor<T>(IExpressionVisitor<T> visitor)
@@ -426,6 +675,7 @@ namespace ExpressionEvaluation
         public MinusExpression(Expression left, Expression right)
             : base(left, right)
         {
+            OperatorPriority = 3;
         }
 
         public override T AcceptVisitor<T>(IExpressionVisitor<T> visitor)
@@ -449,6 +699,7 @@ namespace ExpressionEvaluation
         public MultiplyExpression(Expression left, Expression right)
             : base(left, right)
         {
+            OperatorPriority = 10;
         }
 
         public override T AcceptVisitor<T>(IExpressionVisitor<T> visitor)
@@ -472,6 +723,7 @@ namespace ExpressionEvaluation
         public DivideExpression(Expression left, Expression right)
             : base(left, right)
         {
+            OperatorPriority = 11;
         }
 
         public override T AcceptVisitor<T>(IExpressionVisitor<T> visitor)
@@ -547,7 +799,7 @@ namespace ExpressionEvaluation
     {
         T Visit(ValueExpression expression);
 
-        T Visit(UnaryExpression expression);
+        T Visit(UnaryMinusExpression expression);
 
         T Visit(PlusExpression expression);
 
@@ -572,6 +824,8 @@ namespace ExpressionEvaluation
         /// <param name="visitor">Visitor to visit</param>
         /// <returns>Returns result of visit</returns>
         T AcceptVisitor<T>(IExpressionVisitor<T> visitor);
+
+        int OperatorPriority { get; }
     }
 
     interface IExpressionBuider

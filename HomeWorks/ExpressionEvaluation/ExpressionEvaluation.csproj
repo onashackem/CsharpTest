@@ -55,6 +55,22 @@
   <ItemGroup>
     <Folder Include="test_calc\" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="test_par\01.in" />
+    <None Include="test_par\01.out" />
+    <None Include="test_par\02.in" />
+    <None Include="test_par\02.out" />
+    <None Include="test_par\03.in" />
+    <None Include="test_par\03.out" />
+    <None Include="test_par\04.in" />
+    <None Include="test_par\04.out" />
+    <None Include="test_par\05.in" />
+    <None Include="test_par\05.out" />
+    <None Include="test_par\13.in" />
+    <None Include="test_par\13.out" />
+    <None Include="test_par\14.in" />
+    <None Include="test_par\14.out" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
