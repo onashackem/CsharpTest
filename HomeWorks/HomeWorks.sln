@@ -13,6 +13,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Excel", "Excel\Excel.csproj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpressionEvaluation", "ExpressionEvaluation\ExpressionEvaluation.csproj", "{F4DCBC80-B570-4291-B975-96ACC65A0880}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deque", "Deque\Deque.csproj", "{E8AAA8CB-1F6F-49C5-9CF1-AED107E44D8F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GateNetworks", "GateNetworks\GateNetworks.csproj", "{3F6ADDFB-E28E-4490-83F7-E507AAA3BA83}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -43,6 +47,14 @@ Global
 		{F4DCBC80-B570-4291-B975-96ACC65A0880}.Debug|x86.Build.0 = Debug|x86
 		{F4DCBC80-B570-4291-B975-96ACC65A0880}.Release|x86.ActiveCfg = Release|x86
 		{F4DCBC80-B570-4291-B975-96ACC65A0880}.Release|x86.Build.0 = Release|x86
+		{E8AAA8CB-1F6F-49C5-9CF1-AED107E44D8F}.Debug|x86.ActiveCfg = Debug|x86
+		{E8AAA8CB-1F6F-49C5-9CF1-AED107E44D8F}.Debug|x86.Build.0 = Debug|x86
+		{E8AAA8CB-1F6F-49C5-9CF1-AED107E44D8F}.Release|x86.ActiveCfg = Release|x86
+		{E8AAA8CB-1F6F-49C5-9CF1-AED107E44D8F}.Release|x86.Build.0 = Release|x86
+		{3F6ADDFB-E28E-4490-83F7-E507AAA3BA83}.Debug|x86.ActiveCfg = Debug|x86
+		{3F6ADDFB-E28E-4490-83F7-E507AAA3BA83}.Debug|x86.Build.0 = Debug|x86
+		{3F6ADDFB-E28E-4490-83F7-E507AAA3BA83}.Release|x86.ActiveCfg = Release|x86
+		{3F6ADDFB-E28E-4490-83F7-E507AAA3BA83}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
