@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deque", "Deque\Deque.csproj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GateNetworks", "GateNetworks\GateNetworks.csproj", "{3F6ADDFB-E28E-4490-83F7-E507AAA3BA83}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SPath", "SPath\SPath.csproj", "{7402CFD2-E55B-4427-8328-DE95E5596D7C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -55,6 +57,10 @@ Global
 		{3F6ADDFB-E28E-4490-83F7-E507AAA3BA83}.Debug|x86.Build.0 = Debug|x86
 		{3F6ADDFB-E28E-4490-83F7-E507AAA3BA83}.Release|x86.ActiveCfg = Release|x86
 		{3F6ADDFB-E28E-4490-83F7-E507AAA3BA83}.Release|x86.Build.0 = Release|x86
+		{7402CFD2-E55B-4427-8328-DE95E5596D7C}.Debug|x86.ActiveCfg = Debug|x86
+		{7402CFD2-E55B-4427-8328-DE95E5596D7C}.Debug|x86.Build.0 = Debug|x86
+		{7402CFD2-E55B-4427-8328-DE95E5596D7C}.Release|x86.ActiveCfg = Release|x86
+		{7402CFD2-E55B-4427-8328-DE95E5596D7C}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
