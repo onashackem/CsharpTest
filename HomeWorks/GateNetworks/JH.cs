@@ -22,7 +22,7 @@ namespace Gates
 		Pin MakeInstance(IOItem owner, string name);
 	}
 
-	class Program
+	class Program2
 	{
 		//program makes one network instance
 		static Network network = null;
@@ -55,7 +55,7 @@ namespace Gates
 			}
 		}
 
-		static void Main(string[] args)
+		static void Main2(string[] args)
 		{
 
 			//params count control
@@ -220,12 +220,12 @@ namespace Gates
 			}
 
 			//apply SetList values
-			foreach (Pin p in Program.SetList.Keys)
+			foreach (Pin p in Program2.SetList.Keys)
 			{
-				p.SetValue(Program.SetList[p]);
+				p.SetValue(Program2.SetList[p]);
 			}
 
-			Program.SetList.Clear();
+			Program2.SetList.Clear();
 
 		}
 
@@ -861,7 +861,7 @@ namespace Gates
 			}
 			else
 			{
-				Program.WriteSyntaxError(lineNumber);
+				Program2.WriteSyntaxError(lineNumber);
 				return null;
 			}
 		}
@@ -879,7 +879,7 @@ namespace Gates
 			}
 			else
 			{
-				Program.WriteSyntaxError(lineNumber);
+				Program2.WriteSyntaxError(lineNumber);
 				return null;
 			}
 		}
@@ -988,7 +988,7 @@ namespace Gates
 			}
 			else
 			{
-				Program.WriteSyntaxError(lineNumber);
+				Program2.WriteSyntaxError(lineNumber);
 			}
 
 			return null;
@@ -1308,7 +1308,7 @@ namespace Gates
 				foreach (string key in _Outputs.Keys)
 				{
 					//_Outputs[key].SetValue(_bindingRules[input][i]); //no, no, no...
-					Program.AddToSetList((Pin)_Outputs[key], _bindingRules[input][i]);
+					Program2.AddToSetList((Pin)_Outputs[key], _bindingRules[input][i]);
 					++i;
 				}
 			}
@@ -1321,7 +1321,7 @@ namespace Gates
 					foreach (string key in _Outputs.Keys)
 					{
 						//_Outputs[key].SetValue(null);
-						Program.AddToSetList((Pin)_Outputs[key], null);
+						Program2.AddToSetList((Pin)_Outputs[key], null);
 						++i;
 					}
 				}
@@ -1331,7 +1331,7 @@ namespace Gates
 					foreach (string key in _Outputs.Keys)
 					{
 						//_Outputs[key].SetValue(false);
-						Program.AddToSetList((Pin)_Outputs[key], false);
+						Program2.AddToSetList((Pin)_Outputs[key], false);
 						++i;
 					}
 				}
@@ -1414,7 +1414,7 @@ namespace Gates
 				{
 					i.SetValue(null);
 				}
-				Program.GlobalQueue.Enqueue(this);
+				Program2.GlobalQueue.Enqueue(this);
 			}
 		}
 
@@ -1648,9 +1648,9 @@ namespace Gates
 				{
 					this.SetFollowers();
 				}
-				else if (enqueue && !Program.GlobalQueue.Contains((Gate)this.Owner))
+				else if (enqueue && !Program2.GlobalQueue.Contains((Gate)this.Owner))
 				{
-					Program.GlobalQueue.Enqueue((Gate)this.Owner);
+					Program2.GlobalQueue.Enqueue((Gate)this.Owner);
 
 					#if debug
 					Console.WriteLine("{0} enqueued", this.Owner);
