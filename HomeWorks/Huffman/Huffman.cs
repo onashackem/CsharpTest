@@ -11,18 +11,30 @@ namespace Huffman
     {
         static void Main(string[] args)
         {
+            /*
             string INPUT_FILE, OUTPUT_FILE;
-
             if (!ProcessArguments(args, out INPUT_FILE, out OUTPUT_FILE))
             {
                 Console.WriteLine("Argument Error");
                 return;
             }
+            */
+
+            if (args.Length != 1)
+            {
+                Console.WriteLine("Argument Error");
+                return;
+            }
+
+            string INPUT_FILE = args[0];
 
             try
             {
-                // Decompress the input file
-                new Decompressor().Decompress(INPUT_FILE, OUTPUT_FILE);
+                // HUFFMAN 3: Decompress the input file
+                //new Decompressor().Decompress(INPUT_FILE, OUTPUT_FILE);
+
+                // HUFFMAN 1: Build tree
+                new TreeBuilder().BuildHuffmanTree(INPUT_FILE).PrintTree(Console.Out);
             }
             catch (Exception e)
             {
@@ -31,6 +43,7 @@ namespace Huffman
             }
         }
 
+        /* HUFFMAN 3:
         /// <summary>
         /// Extracts input and output file from arguments.
         /// </summary>
@@ -68,7 +81,7 @@ namespace Huffman
             // Input parameter is OK
             return true;
         }
-        
+        */
     }
 
     /// <summary>
