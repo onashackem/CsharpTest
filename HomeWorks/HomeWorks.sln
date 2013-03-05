@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GateNetworks", "GateNetwork
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SPath", "SPath\SPath.csproj", "{7402CFD2-E55B-4427-8328-DE95E5596D7C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ParallelMergeSort", "ParallelMergeSort\ParallelMergeSort.csproj", "{FB3F19E7-52C9-49CB-B5EB-C2A02AA376C5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -61,6 +63,10 @@ Global
 		{7402CFD2-E55B-4427-8328-DE95E5596D7C}.Debug|x86.Build.0 = Debug|x86
 		{7402CFD2-E55B-4427-8328-DE95E5596D7C}.Release|x86.ActiveCfg = Release|x86
 		{7402CFD2-E55B-4427-8328-DE95E5596D7C}.Release|x86.Build.0 = Release|x86
+		{FB3F19E7-52C9-49CB-B5EB-C2A02AA376C5}.Debug|x86.ActiveCfg = Debug|x86
+		{FB3F19E7-52C9-49CB-B5EB-C2A02AA376C5}.Debug|x86.Build.0 = Debug|x86
+		{FB3F19E7-52C9-49CB-B5EB-C2A02AA376C5}.Release|x86.ActiveCfg = Release|x86
+		{FB3F19E7-52C9-49CB-B5EB-C2A02AA376C5}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
