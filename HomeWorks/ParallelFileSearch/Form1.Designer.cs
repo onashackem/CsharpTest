@@ -30,7 +30,7 @@
         {
             this.components = new System.ComponentModel.Container();
             this.lbx_Files = new System.Windows.Forms.ListBox();
-            this.label1 = new System.Windows.Forms.Label();
+            this.lbl_Stats = new System.Windows.Forms.Label();
             this.timer = new System.Windows.Forms.Timer(this.components);
             this.SuspendLayout();
             // 
@@ -44,18 +44,17 @@
             this.lbx_Files.Name = "lbx_Files";
             this.lbx_Files.Size = new System.Drawing.Size(256, 212);
             this.lbx_Files.TabIndex = 0;
+            this.lbx_Files.Sorted = true;
+            this.lbx_Files.DisplayMember = "Name";
             // 
             // label1
             // 
-            this.label1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(13, 237);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(47, 13);
-            this.label1.TabIndex = 1;
-            this.label1.Text = "lbl_Stats";
+            this.lbl_Stats.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.lbl_Stats.AutoSize = true;
+            this.lbl_Stats.Location = new System.Drawing.Point(13, 237);
+            this.lbl_Stats.Name = "lbl_Stats";
+            this.lbl_Stats.Size = new System.Drawing.Size(47, 13);
+            this.lbl_Stats.TabIndex = 1;
             // 
             // timer
             // 
@@ -67,7 +66,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(284, 262);
-            this.Controls.Add(this.label1);
+            this.Controls.Add(this.lbl_Stats);
             this.Controls.Add(this.lbx_Files);
             this.Name = "ParallelFileSearchForm";
             this.Text = "ParallelFileSearch";
@@ -80,7 +79,7 @@
         #endregion
 
         private System.Windows.Forms.ListBox lbx_Files;
-        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label lbl_Stats;
         private System.Windows.Forms.Timer timer;
     }
 }
