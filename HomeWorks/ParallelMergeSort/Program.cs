@@ -11,8 +11,8 @@ namespace ParallelMergeSort
         static void Main(string[] args)
         {
             // Get number of allowed threads
-            var poolSize = GetPoolSize(args);
-            if (poolSize < 1)
+            var threadCount = GetThreadCount(args);
+            if (threadCount < 1)
                 return;
 
             // Read numbers to sort
@@ -20,20 +20,20 @@ namespace ParallelMergeSort
             if (inputs == null)
                 return;
 
-            // No sence to parallelize
-            if (inputs.Count < 2 * poolSize)
-                poolSize = 1;
+            // No sense to parallelize
+            if (inputs.Count < 2 * threadCount)
+                threadCount = 1;
 
             var task = new MergeTaks(inputs);
-            var pool = new ThreadPool(poolSize);
+            var pool = new ThreadPool(threadCount - 1);
 
             pool.ProcessTask(task);
 
             task.PrintResult();
 
-            ///* TEST
+            /* TEST
             long time = 0;
-            for (int i = 0; i < 50; ++i)
+            for (int i = 0; i < 100; ++i)
             {
                 inputs = GetInputs();
                 task = new MergeTaks(inputs);
@@ -50,7 +50,7 @@ namespace ParallelMergeSort
             Console.WriteLine("2 threads: {0} ms.", time);
 
             time = 0;
-            for (int i = 0; i < 50; ++i)
+            for (int i = 0; i < 100; ++i)
             {
                 inputs = GetInputs();
                 task = new MergeTaks(inputs);
@@ -70,8 +70,8 @@ namespace ParallelMergeSort
             Console.ReadLine();
             //*/
         }
-         
-        private static int GetPoolSize(string[] args)
+
+        private static int GetThreadCount(string[] args)
         {
             int threadCount;
             if (args.Length != 1 || !Int32.TryParse(args[0], out threadCount) || threadCount > 256 || threadCount < 1)
@@ -83,18 +83,17 @@ namespace ParallelMergeSort
             return threadCount;
         }
 
-        private static Queue<List<int>> GetInputs()
+        private static List<int> GetInputs()
         {
-            Queue<List<int>> inputs = new Queue<List<int>>();
-
-            /*
+            // /*
+            List<int> numbers = new List<int>();
             string line;
-            while(!String.IsNullOrEmpty((line = Console.ReadLine())))
+            while (!String.IsNullOrEmpty((line = Console.ReadLine())))
             {
                 int num;
                 if (Int32.TryParse(line, out num))
                 {
-                    inputs.Enqueue(new List<int>() { num });
+                    numbers.Add(num);
                 }
                 else
                 {
@@ -103,10 +102,10 @@ namespace ParallelMergeSort
                 }
             }
 
-            //return inputs;
-            */
+            return numbers;
+            //*/
 
-            ///*
+            /*
             List<int> numbers = new List<int>() { 
                 2, 5, 3, -1, 7, 4, 0, 8, -7, 1, 
                 33, 100, 4, 1000, -445, 999, -339, 3000994,
@@ -114,117 +113,172 @@ namespace ParallelMergeSort
                 393793, 9839, 9289348, 329, 3875, 87, 
                 94738, 743847,  872438, 20389, 0239, 0239,
                 2989, 483498, 029, 023909, 20390, 20390, 39039,
-                923, 2398, 2398398, 2398, 3498, 9348, 8237};
-            foreach (var num in numbers)
-            {
-                inputs.Enqueue(new List<int>() { num });
-            }
+                923, 2398, 2398398, 2398, 3498, 9348, 8237,             
+                2, 5, 3, -1, 7, 4, 0, 8, -7, 1, 
+                33, 100, 4, 1000, -445, 999, -339, 3000994,
+                343443, 334,2232, 2, 232332, 232, 23322, 554, 
+                393793, 9839, 9289348, 329, 3875, 87, 
+                94738, 743847,  872438, 20389, 0239, 0239,
+                2989, 483498, 029, 023909, 20390, 20390, 39039,
+                923, 2398, 2398398, 2398, 3498, 9348, 8237,             
+                2, 5, 3, -1, 7, 4, 0, 8, -7, 1, 
+                33, 100, 4, 1000, -445, 999, -339, 3000994,
+                343443, 334,2232, 2, 232332, 232, 23322, 554, 
+                393793, 9839, 9289348, 329, 3875, 87, 
+                94738, 743847,  872438, 20389, 0239, 0239,
+                2989, 483498, 029, 023909, 20390, 20390, 39039,
+                923, 2398, 2398398, 2398, 3498, 9348, 823,             
+                2, 5, 3, -1, 7, 4, 0, 8, -7, 1, 
+                33, 100, 4, 1000, -445, 999, -339, 3000994,
+                343443, 334,2232, 2, 232332, 232, 23322, 554, 
+                393793, 9839, 9289348, 329, 3875, 87, 
+                94738, 743847,  872438, 20389, 0239, 0239,
+                2989, 483498, 029, 023909, 20390, 20390, 39039,
+                923, 2398, 2398398, 2398, 3498, -33, 208};
 
-            return inputs;
+            return numbers;
             // */
         }
 
+        /// <summary>
+        /// Class that provides a single/multi threaded way to solve MergeTask
+        /// </summary>
         class ThreadPool
         {
             private int threadsCount = 0;
             private List<Thread> pool;
 
+            /// <summary>
+            /// Constructor with maximal number of threads
+            /// </summary>
+            /// <param name="size"></param>
             public ThreadPool(int size)
             {
-                this.threadsCount = size - 1;
-
-                // Parallelize only when creating any new thread is allowed
-                if (threadsCount > 0)
-                {
-                    this.pool = new List<Thread>(threadsCount);
-                }
+                this.threadsCount = size;
             }
 
+            /// <summary>
+            /// Merge task to parallelize
+            /// </summary>
+            /// <param name="task"></param>
             public void ProcessTask(MergeTaks task)
             {
-                while (!task.Finished)
+                // Single threaded version
+                if (threadsCount == 0)
                 {
-                    if (threadsCount == 0)
+                    while (!task.Finished)
                     {
-                        task.Merge(task.NextList, task.NextList);
+                        task.Merge();
                     }
-                    else
+                }
+                else
+                {
+                    // Multi threaded version
+                    while (!task.Finished)
                     {
-                        for(int i = 0; i < threadsCount; ++i)
+                        this.pool = new List<Thread>(threadsCount);
+
+                        // Run parallely in every allowed new thread
+                        for (int i = 0; i < threadsCount; ++i)
                         {
-                            //var thread = new Thread(task.Merge);
-                            var thread = new Thread(() => task.Merge(task.NextList, task.NextList));
+                            var thread = new Thread(() => task.Merge());
                             pool.Add(thread);
                             thread.Start();
                         }
 
-                        // Do also some work during waiting
-                        task.Merge(task.NextList, task.NextList);
+                        // Run even in the main thread
+                        task.Merge();
 
-                        foreach (var thread in pool)
-                        {
-                            thread.Join();
-                        }
-
-                        //System.Diagnostics.Debug.Assert(pool.Count(thread => thread.ThreadState == ThreadState.Stopped) == threadsCount, "Not all threads finished");
-                            
                         // Wait for all threads to finish
-                        while (pool.Count(thread => thread.ThreadState == ThreadState.Stopped) < threadsCount)
+                        while (pool.Count(thread => thread.ThreadState == ThreadState.Running) > 0)
                         {
-                            // Do also some work during waiting
-                            task.Merge(task.NextList, task.NextList);
+                            // Do not waiste time while waiting
+                            task.Merge();
                         }
                     }
                 }
             }
         }
 
+        /// <summary>
+        /// The class that provides merge sort functionality.
+        /// </summary>
         class MergeTaks
         {
-            Queue<List<int>> queue;
+            private Queue<List<int>> queue;
 
-            public bool Finished { get { lock (queue) { return queue != null && queue.Count == 1; } } }
-
-            public List<int> NextList { get { if (queue.Count > 0) return queue.Dequeue(); else return null; } }
-
-            public MergeTaks(Queue<List<int>> inputs)
+            /// <summary>
+            /// Indicates whether merge task has finished
+            /// </summary>
+            public bool Finished
             {
-                this.queue = inputs;
+                get
+                {
+                    lock (queue)
+                    {
+                        return queue != null && queue.Count == 1;
+                    }
+                }
             }
 
-            public void Merge(List<int> list1, List<int> list2)
+            /// <summary>
+            /// Deques a list from queue
+            /// </summary>
+            private List<int> NextList
             {
-                //Console.WriteLine("Current thread: " + Thread.CurrentThread.ManagedThreadId);   
-
-                if (list1 == null && list2 == null)
-                    return;
-
-                if (list1 == null)
+                get
                 {
-                    queue.Enqueue(list2);
-                    return;
+                    lock (queue)
+                    {
+                        if (queue.Count > 0)
+                        {
+                            // queue.Dequeue(); sometimes returns null, I have no idea why
+                            var list = queue.Dequeue();
+                            return list ?? new List<int>(0);
+                        }
+                        else
+                            return new List<int>(0); ;
+                    }
                 }
+            }
 
-                if (list2 == null)
+            /// <summary>
+            /// Constructor with a numbers to be sorted 
+            /// </summary>
+            /// <param name="numbers">Numbers to sort</param>
+            public MergeTaks(List<int> numbers)
+            {
+                this.queue = new Queue<List<int>>(numbers.Count);
+
+                foreach (var num in numbers)
                 {
-                    queue.Enqueue(list1);
-                    return;
+                    queue.Enqueue(new List<int>(1) { num });
                 }
+            }
 
-                var merged = new List<int>(list1.Count + list2.Count);
-                merged.AddRange(list1);
-                merged.AddRange(list2);
+            /// <summary>
+            /// The merge method of the merge task. Dequeues two list to merge, merges them and enqueues the result back to the queue.
+            /// </summary>
+            public void Merge()
+            {
+                var merged = new List<int>();
+                merged.AddRange(NextList);
+                merged.AddRange(NextList);
+
+                // Nothing dequeued
+                if (merged.Count == 0)
+                    return;
+
                 merged.Sort();
 
                 queue.Enqueue(merged);
-
-                //Console.WriteLine("Thread: " + Thread.CurrentThread.ManagedThreadId + " finished.");
             }
 
+            /// <summary>
+            /// Prints ordered numbers separately on a line on standard output
+            /// </summary>
             public void PrintResult()
             {
-                System.Diagnostics.Debug.Assert(queue.Count == 1, "Not finished");
-
                 foreach (var num in this.queue.Dequeue())
                 {
                     Console.WriteLine(num);

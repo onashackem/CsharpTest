@@ -58,15 +58,10 @@ namespace ObjectList
                 if (value == null)
                     throw new InvalidOperationException("Cannot remove from empty list");
                 
-                // Set value to null AFTER it is returned
-                try
-                {
-                    return value;
-                }
-                finally
-                {
-                    value = null;
-                }
+                // Set value to null after it is returned
+                object result = value;
+                value = null;
+                return result;
             }
         }
 
