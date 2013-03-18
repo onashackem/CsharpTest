@@ -13,12 +13,12 @@ namespace ParallelFileSearch
     class FileSearcher
     {
         private readonly int BUFFER_SIZE = 2000000;
-        private FileInfo fileInfo;
+        private IByteSearchState initialSearchState;
         private byte[] buffer;
 
-        public FileSearcher(FileInfo fileInfo)
+        public FileSearcher(IByteSearchState initialSearchState)
         {
-            this.fileInfo = fileInfo;
+            this.initialSearchState = initialSearchState;
             buffer = new byte[BUFFER_SIZE];
         }
 
@@ -27,11 +27,11 @@ namespace ParallelFileSearch
         /// </summary>
         /// <param name="initialSearchState">Initial state of a search automat</param>
         /// <returns>Returns true if automat finds pattern match</returns>
-        public bool IsMatch(IByteSearchState initialSearchState)
+        public bool IsMatch(FileInfo fileInfo)
         {
             // Read file (part by part) into buffer
-            var state = initialSearchState;
-            using (FileStream input = new FileStream(this.fileInfo.FullName, FileMode.Open))
+            var state = this.initialSearchState;
+            using (FileStream input = new FileStream(fileInfo.FullName, FileMode.Open))
             {
                 // Read the BUFFER_SIZE long part of file
                 int bytesRead = -1;
@@ -50,7 +50,7 @@ namespace ParallelFileSearch
                 }
             }
 
-            // Not found
+            // Pattern not found in file
             return false;
         }
     }
