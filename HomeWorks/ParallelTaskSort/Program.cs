@@ -12,7 +12,7 @@ namespace ParallelTaskSort
         private static readonly Queue<List<int>> sortedListsQueue = new Queue<List<int>();
 
         /*
-         * Maximal paralelization of MERGE tasks
+         * Maximal parallelization of MERGE tasks
          * Using System.Threading.Tasks.*
          * Do not use Thread, ThreadPool
          * Task(<T>).Wait, WaitALL, WaitAny, ContinueWith <==> TaskFactory.ContinueWithAll/Any(b)

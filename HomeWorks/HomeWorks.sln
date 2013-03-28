@@ -25,6 +25,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ObjectList", "ObjectList\Ob
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ParallelFileSearch", "ParallelFileSearch\ParallelFileSearch.csproj", "{D3FB2269-75BD-4CF6-9824-278D92E68A4A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ParallelTaskSort", "ParallelTaskSort\ParallelTaskSort.csproj", "{E65A8FAE-C46C-4D5A-A4F1-A0B6EEF6E01F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -79,6 +81,10 @@ Global
 		{D3FB2269-75BD-4CF6-9824-278D92E68A4A}.Debug|x86.Build.0 = Debug|x86
 		{D3FB2269-75BD-4CF6-9824-278D92E68A4A}.Release|x86.ActiveCfg = Release|x86
 		{D3FB2269-75BD-4CF6-9824-278D92E68A4A}.Release|x86.Build.0 = Release|x86
+		{E65A8FAE-C46C-4D5A-A4F1-A0B6EEF6E01F}.Debug|x86.ActiveCfg = Debug|x86
+		{E65A8FAE-C46C-4D5A-A4F1-A0B6EEF6E01F}.Debug|x86.Build.0 = Debug|x86
+		{E65A8FAE-C46C-4D5A-A4F1-A0B6EEF6E01F}.Release|x86.ActiveCfg = Release|x86
+		{E65A8FAE-C46C-4D5A-A4F1-A0B6EEF6E01F}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
