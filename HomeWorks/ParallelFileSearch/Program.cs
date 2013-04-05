@@ -32,13 +32,16 @@ namespace ParallelFileSearch
         [STAThread]
         static void Main(string[] args)
         {
-            // TODO: params check - "Argument error" and exit;
-            args = new string[] { "29", @"c:\Temp", "4", "16" };
+            string pattern;
+            string path;
+            int searcherThreadCount;
+            int queueSize;
 
-            string pattern = args[0];
-            string path = args[1];
-            int searcherThreadCount = Int32.Parse(args[2]);
-            int queueSize = Int32.Parse(args[3]);
+            if (!ParseArguments(args, out pattern, out path, out searcherThreadCount, out queueSize))
+            {
+                Console.WriteLine("Arguments Error.");
+                return;
+            }
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
@@ -47,6 +50,29 @@ namespace ParallelFileSearch
                     new ParallelFileSearcher(pattern, path, searcherThreadCount, queueSize)
                 )
             );            
+        }
+
+        private static bool ParseArguments(string[] args, out string pattern, out string path, out int searcherThreadCount, out int queueSize)
+        {
+            pattern = path = "";
+            searcherThreadCount = queueSize = 0;
+
+            if (args.Length != 4)
+                return false;
+
+            pattern = args[0];
+            path = args[1];
+
+            if (String.IsNullOrEmpty(pattern) || String.IsNullOrEmpty(path) || !new DirectoryInfo(path).Exists)
+                return false;
+
+            if (!Int32.TryParse(args[2], out searcherThreadCount) || searcherThreadCount < 1)
+                return false;
+
+            if (!Int32.TryParse(args[3], out queueSize) || queueSize < searcherThreadCount)
+                return false;
+
+            return true;
         }
     }
 }

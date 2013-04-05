@@ -13,17 +13,20 @@ namespace ParallelFileSearch
         string path;
         int searcherThreadCount;
         int queueSize;
-        bool directoriesBrowsed = false;
+
+        int totalFilesBrowsed = 0;
 
         SearchAutomat automat;
         FileQueue processQueue;
-        public ParallelFileSearchForm SearchForm { get; set; }
+        List<SearchFileTask> taskPool;
 
         // Represents currently browsed directory layer
         Queue<DirectoryInfo> discoveredFolders = new Queue<DirectoryInfo>();
 
         // Represents next directory layer to browse
         Queue<DirectoryInfo> pendingDiscoveredFolders = new Queue<DirectoryInfo>();
+
+        public ParallelFileSearchForm SearchForm { get; set; }
 
         public ParallelFileSearcher(string pattern, string path, int searcherThreadCount, int queueSize)
         {
@@ -39,20 +42,37 @@ namespace ParallelFileSearch
 
         public void Run()
         {
-            this.SearchForm.OnSearchStarted();
-
             BrowsePathInBackground();
 
-            SearchInFiles();
+            SearchInFilesInBackground();
+
+            // Wait till all task are finished
+            foreach (var task in taskPool)
+                task.WaitForEnd();
+
+            // Wait till all tasks (hopefully) starts
+            Thread.Sleep(1000);
+
+            foreach (var task in taskPool)
+                System.Diagnostics.Debug.Assert(!task.IsRunning, "All tasks should have stopped by now");
+
+            System.Diagnostics.Debug.Assert(this.processQueue.Empty, "There should be no file to process any more.");
+
+            // Tell form simply how many files was totaly browsed
+            SearchForm.TotalBrowsedFiles = totalFilesBrowsed;
         }
 
+        /// <summary>
+        /// Creates a thread that browses the whole root directory in BFS. 
+        /// When finished, notifies processFielQueue that all files discovered.
+        /// </summary>
         private void BrowsePathInBackground()
         {
+            // Asynchronously browse the whole directory structure
             new Thread(
                 () =>
                 {
-                    // Asynchronously browse the whole directory structure
-                    BrowseDirectory(new DirectoryInfo(this.path));
+                    BrowseDirectoryBFS(new DirectoryInfo(this.path));
                     this.processQueue.FileSearchFinished();
                 }
             ).Start();
@@ -62,12 +82,13 @@ namespace ParallelFileSearch
         /// Browses the whole files and directories structure from the current path in BFS order.
         /// </summary>
         /// <param name="rootDirInfo">The root directory to browse</param>
-        private void BrowseDirectory(DirectoryInfo rootDirInfo)
+        private void BrowseDirectoryBFS(DirectoryInfo rootDirInfo)
         {
             // Add files to the queue
             foreach (var fileInfo in rootDirInfo.GetFiles())
             {
                 this.processQueue.AddFileToProcess(fileInfo);
+                ++totalFilesBrowsed;
             }
 
             // Add directories to the next layer
@@ -81,11 +102,7 @@ namespace ParallelFileSearch
             {
                 // All directories processed
                 if (this.pendingDiscoveredFolders.Count == 0)
-                {
-                    // Notify about the end of search
-                    //TODO: this.processQueue.FileSearchFinished();
                     return;
-                }
 
                 // Switch next layer as current layer and start processing it
                 this.discoveredFolders = this.pendingDiscoveredFolders;
@@ -93,71 +110,19 @@ namespace ParallelFileSearch
             }
 
             // Recursive call on the next directory in order
-            BrowseDirectory(this.discoveredFolders.Dequeue());
+            BrowseDirectoryBFS(this.discoveredFolders.Dequeue());
         }
-
-        private void SearchInFiles()
+        
+        private void SearchInFilesInBackground()
         {
-            FileInfo fileToProcess = null;
+            this.taskPool = new List<SearchFileTask>(this.searcherThreadCount);
 
-            while ((fileToProcess = this.processQueue.GetFileToProcess()) != null)
+            // Create maximum of allowed tasks (task <=> thread) and trigger it
+            for (int i = 0; i < this.searcherThreadCount; ++i)
             {
-                var fileSearcher = new FileSearcher(fileToProcess);
-
-                if (fileSearcher.IsMatch(this.automat.GetInitilState()))
-                {
-                    this.SearchForm.AcceptFile(fileToProcess);
-                }
-            }
-
-            this.SearchForm.OnSearchFinished();
-        }
-
-        private class SearchFileTask
-        {
-            private Thread thread;
-            private FileQueue processQueue;
-            private SearchAutomat automat;
-            private ParallelFileSearchForm form;
-
-            public SearchFileTask(FileQueue processQueue, SearchAutomat automat, ParallelFileSearchForm form)
-            {
-                this.processQueue = processQueue;
-                this.automat = automat;
-                this.form = form;
-            }
-
-            public void Run()
-            {
-                while (!this.processQueue.Empty)
-                {
-                    FileInfo fileToProcess = this.processQueue.GetFileToProcess();
-
-                    if (fileToProcess == null)
-                    {
-                        Thread.Sleep(100);
-                        break;
-                    }
-                    
-                    thread = new Thread(() => SearchFile(fileToProcess));
-                    thread.Start();
-                    thread.Join();
-                }
-            }
-
-            private void SearchFile(FileInfo fileToProcess)
-            {
-                var fileSearcher = new FileSearcher(fileToProcess);
-
-                if (fileSearcher.IsMatch(this.automat.GetInitilState()))
-                {
-                    this.form.AcceptFile(fileToProcess);
-                }
-            }
-
-            public bool IsRunning()
-            {
-                return thread.ThreadState == ThreadState.Running;
+                var task = new SearchFileTask(this.processQueue, this.automat, this.SearchForm);
+                taskPool.Add(task);
+                task.Run();
             }
         }
     }
