@@ -28,8 +28,8 @@ namespace ParallelTaskSort
          */
         static void Main(string[] args)
         {
-            List<int> buffer1 = new List<int>(10) {5, 9, 3, 6, 0, 7, 8};
-            List<int> buffer2 = new List<int>(10) {15, 6, 4, 51, 1, 18, 91, -8};
+            List<int> buffer1 = new List<int>(10) {5, 9, 3, 6, 0, 7, 8, 91, -8};
+            List<int> buffer2 = new List<int>(10) {15, 6, 4, 51, 1, 18};
 
             new SortTaskRunner(0, buffer1, buffer2);
 
@@ -87,6 +87,14 @@ namespace ParallelTaskSort
         private readonly Dictionary<int, SortTasksLevel> levels = new Dictionary<int,SortTasksLevel>();
         private readonly Dictionary<int, SortTaskRunner> finishedTasks = new Dictionary<int, SortTaskRunner>();
 
+        private static Merger _instance = new Merger();
+        public static Merger Instance { get { return _instance; } }
+
+        // Prevent user from creating instances of Merger class
+        private Merger()
+        {
+        }
+
         public void AddSortTask(SortTaskRunner task)
         {
             lock(levels) 
@@ -106,6 +114,8 @@ namespace ParallelTaskSort
                 {
                     var pendingTask = finishedTasks[task.Level];
                     finishedTasks.Remove(task.Level);
+
+                    // Both tasks have finished, not a blocking operation
                     AddSortTask(new SortTaskRunner(task.Level + 1, pendingTask.Result, task.Result));
                 }
                 else
@@ -118,20 +128,30 @@ namespace ParallelTaskSort
 
     class SortTasksLevel
     {
-        public List<SortTaskRunner> Tasks { get; private set; }
+        private List<SortTaskRunner> _tasks;
+        private int schedulledTasksCount = -1;
+        private bool allTasksSchedulled = false;
+
+        public int TasksCount { get { return _tasks.Count; } }
+
+        public bool IsLevelCompleted 
+        { 
+            get 
+            { 
+                return
+                    (allTasksSchedulled || schedulledTasksCount == _tasks.Count)
+                    && _tasks.Count(t => !t.IsTaskCompleted) == 0; 
+            }
+        }
 
         public SortTasksLevel()
         {
-            Tasks = new List<SortTaskRunner>();
+            _tasks = new List<SortTaskRunner>();
         }
-
-        private int schedulledTasksCount = -1;
-        private bool allTasksSchedulled = false;
-        public bool IsLevelCompleted { get { return (allTasksSchedulled || schedulledTasksCount == Tasks.Count) && Tasks.Count(t => !t.IsTaskCompleted) == 0;  } }
 
         public void AddTaskRunner(SortTaskRunner taskRunner)
         {
-            Tasks.Add(taskRunner);
+            _tasks.Add(taskRunner);
         }
 
         public void SetAllTasksSchedulled()
@@ -161,7 +181,11 @@ namespace ParallelTaskSort
             this.Level = level;
 
             this.Task = new Task<List<int>>(() => Sort(list1, list2));
-            Task.ContinueWith(task => { });
+
+            // Set after complete action
+            Task.ContinueWith(task => Merger.Instance.TaskCompleted(this) );
+
+            // Start task
             Task.Start();
         }
 
