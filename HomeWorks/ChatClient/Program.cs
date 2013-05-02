@@ -72,6 +72,10 @@ namespace Chat
             }
             else
             {
+
+                new Chat.Server.Server2().Run();
+                new Chat.Client.Client2().Run();
+                new Chat.Client.Client2().Run();
                 //new ClientWindow().Show();
             }
 

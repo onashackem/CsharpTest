@@ -27,7 +27,7 @@ namespace Chat.Client
             {
                 // Establish the remote endpoint for the socket.
                 // The name of the 
-                IPHostEntry ipHostInfo = Dns.GetHostEntry(Configuration.Configuration.ServerAddress);
+                IPHostEntry ipHostInfo = Dns.GetHostEntry(Configuration.Configuration.ServerIpV4Address);
                 IPAddress ipAddress = ipHostInfo.AddressList[0];
                 IPEndPoint remoteEP = new IPEndPoint(ipAddress, Configuration.Configuration.ServerPort);
 
