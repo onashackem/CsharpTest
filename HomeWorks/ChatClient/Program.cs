@@ -21,7 +21,7 @@ namespace Chat
      * Dotazat se, zda bezet v rezimu server + client / jen client
      * 
      *
-     * TCPIP, na portu 4586, pro IPv4/6, ypr8vz v UTF-8, LE
+     * TCPIP, na portu 4586, pro IPv4/6, zprávy v UTF-8, LE
      * Protokoly 1.0 nebo  1.1
      * 
      * kazda message na 1 radek
@@ -66,12 +66,13 @@ namespace Chat
                     MessageBoxIcon.Question, 
                     MessageBoxDefaultButton.Button1))
             {
-                Chat.Server.Server.Run(null);
-                new ClientWindow().Show();
+                new Chat.Server.Server().StartListening();
+                new Chat.Client.Client().StartClient();
+                //new ClientWindow().Show();
             }
             else
             {
-                new ClientWindow().Show();
+                //new ClientWindow().Show();
             }
 
             Application.Run();
