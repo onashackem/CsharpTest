@@ -8,28 +8,30 @@ namespace ChatClient.Core
 {
     abstract class NetworkCommunicator
     {
-        protected abstract void OnReadFinished(string data, NetworkStream stream);
-        protected abstract void OnReadingFailed(Exception ex, NetworkStream stream, ReadStateObject state);
-        protected abstract void OnSendingFailed(Exception ex, NetworkStream stream, SendStateObject state);
+        public bool Connected { get; protected set; }
 
-        protected void StartReading(NetworkStream stream)
+        protected abstract void OnReadFinished(ReadStateObject readState);
+        protected abstract void OnReadingFailed(Exception ex, ReadStateObject readState);
+        protected abstract void OnSendingFailed(Exception ex, SendStateObject sendState);
+
+        protected void StartReading(NetworkStreamInfo streamInfo)
         {
-            ReadStateObject state = new ReadStateObject(stream);
+            ReadStateObject state = new ReadStateObject(streamInfo);
 
             try
             {
-                stream.BeginRead(state.Buffer, 0, state.BufferSize, new AsyncCallback(ReadCallback), state);
+                streamInfo.Stream.BeginRead(state.Buffer, 0, state.BufferSize, new AsyncCallback(ReadCallback), state);
             }
             catch (Exception ex)
             {
-                OnReadingFailed(ex, stream, state);
+                OnReadingFailed(ex, state);
             }
         }
 
         protected void ReadCallback(IAsyncResult result)
         {
             var state = (ReadStateObject)result.AsyncState;
-            var stream = state.Stream;
+            var stream = state.StreamInfo.Stream;
 
             try
             {
@@ -43,7 +45,10 @@ namespace ChatClient.Core
                 if (state.Data.EndsWith("\n"))
                 {
                     // Let communicator handle itself
-                    OnReadFinished(state.Data, stream);
+                    OnReadFinished(state);
+
+                    // New reading starts
+                    state = new ReadStateObject(state.StreamInfo);
                 }
 
                 // Read next message
@@ -51,33 +56,33 @@ namespace ChatClient.Core
             }
             catch (Exception ex)
             {
-                OnReadingFailed(ex, stream, state);
+                OnReadingFailed(ex, state);
             }
         }
 
-        protected void StartSending(String message, NetworkStream stream)
+        protected void StartSending(String message, NetworkStreamInfo streamInfo)
         {
             System.Diagnostics.Debug.Assert(message.EndsWith("\n"), "Message has to end with a newline!");
 
             // Create state object
-            var state = new SendStateObject(stream, message);
+            var state = new SendStateObject(streamInfo, message);
             var buffer = state.Buffer;
 
             try
             {
                 // Send asynchronously
-                stream.BeginWrite(buffer, 0, buffer.Length, new AsyncCallback(SendCallback), state);
+                streamInfo.Stream.BeginWrite(buffer, 0, buffer.Length, new AsyncCallback(SendCallback), state);
             }
             catch (Exception ex)
             {
-                OnSendingFailed(ex, stream, state);
+                OnSendingFailed(ex, state);
             }
         }
 
         protected void SendCallback(IAsyncResult result)
         {
             var state = (SendStateObject)result.AsyncState;
-            var stream = state.Stream;
+            var stream = state.StreamInfo.Stream;
 
             stream.EndWrite(result);
         }
@@ -90,7 +95,7 @@ namespace ChatClient.Core
             /// <summary>
             /// Opened socket
             /// </summary>
-            public NetworkStream Stream { get; private set; }
+            public NetworkStreamInfo StreamInfo { get; private set; }
 
             /// <summary>
             /// Size of Buffer
@@ -113,49 +118,78 @@ namespace ChatClient.Core
             // Communication encoding
             private Encoding encoding = Encoding.UTF8;
 
-            public ReadStateObject(NetworkStream stream)
+            public ReadStateObject(NetworkStreamInfo stream)
             {
-                Stream = stream;
-                ClearBuffer();
+                StreamInfo = stream;
+                Init();
             }
 
             public void DecodeBuffer()
             {
                 sb.Append(encoding.GetString(Buffer).Replace("\0", ""));
-                ClearBuffer();
+                Init();
             }
 
-            private void ClearBuffer()
+            private void Init()
             {
                 Buffer = new byte[BufferSize];
             }
         }
 
         /// <summary>
-        /// Class that is send as ReadCallback async state
+        /// Class that is send as SendCallback async state
         /// </summary>
         protected class SendStateObject
         {
-            /// <summary>
-            /// Opened socket
-            /// </summary>
-            public NetworkStream Stream { get; private set; }
-
-            /// <summary>
-            /// Represents the whole data
-            /// </summary>
-            public string Data { get; private set; }
-
-            public byte[] Buffer { get { return encoding.GetBytes(Data); } }
+            private string data;
 
             // Communication encoding
             private Encoding encoding = Encoding.UTF8;
 
-            public SendStateObject(NetworkStream stream, string data)
+            /// <summary>
+            /// Opened socket
+            /// </summary>
+            public NetworkStreamInfo StreamInfo { get; private set; }
+
+            /// <summary>
+            /// Gets decoded data to bytes
+            /// </summary>
+            public byte[] Buffer { get { return encoding.GetBytes(data); } }
+
+            public SendStateObject(NetworkStreamInfo stream, string data)
+            {
+                StreamInfo = stream;
+                this.data = data;
+            }
+        }
+
+        /// <summary>
+        /// Wrapper around NetworkStream - to remember its last contact
+        /// </summary>
+        protected class NetworkStreamInfo
+        {
+            public NetworkStream Stream { get; private set; }
+
+            public DateTime LastContact { get; set; }
+
+            public int ID { get; private set; }
+
+            /// <summary>
+            /// Constructor for server - to distinguis streams by added id
+            /// </summary>
+            /// <param name="stream"></param>
+            /// <param name="id"></param>
+            public NetworkStreamInfo(NetworkStream stream, int id)
             {
                 Stream = stream;
-                Data = data;
+                ID = id;
             }
+
+            /// <summary>
+            /// Constructor for clients - no id needed
+            /// </summary>
+            /// <param name="stream"></param>
+            public NetworkStreamInfo(NetworkStream stream) : this (stream, 1) {}
         }
     }
 }

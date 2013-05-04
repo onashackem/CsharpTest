@@ -14,6 +14,18 @@ namespace Chat.Client.GUI
         public ConnectDialog()
         {
             InitializeComponent();
+
+            this.tbx_Address.Text = Configuration.Configuration.ServerIpV4Address;
+        }
+
+        public string GetAddress()
+        {
+            return this.tbx_Address.Text;
+        }
+
+        public string GetName()
+        {
+            return this.tbx_Name.Text;
         }
     }
 }

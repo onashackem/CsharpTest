@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Client\Client2.cs" />
+    <Compile Include="Client\MessageEventArgs.cs" />
     <Compile Include="Configuration\Configuration.cs" />
     <Compile Include="Configuration\Versions.cs" />
     <Compile Include="Core\NetworkCommunicator.cs" />

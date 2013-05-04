@@ -12,28 +12,26 @@ namespace Chat.Server
     class Server2 : NetworkCommunicator, IDisposable
     {
         private TcpListener server = null;
+
+        Dictionary<int, NetworkStreamInfo> streams = new Dictionary<int, NetworkStreamInfo>();
         
         public void Run() 
         {
             try
             {
-                // Set the TcpListener on port 13000.
                 Int32 port = Configuration.Configuration.ServerPort;
                 IPAddress localAddr = IPAddress.Parse(Configuration.Configuration.ServerIpV4Address);
 
-                // TcpListener server = new TcpListener(port);
+                // Create server
                 server = new TcpListener(localAddr, port);
 
                 new Thread(new ThreadStart(() => Listen())).Start();
+
+                Connected = true;
             }
-            catch (SocketException e)
+            catch (Exception e)
             {
-                Console.WriteLine("SocketException: {0}", e);
-            }
-            finally
-            {
-                // Stop listening for new clients.
-                server.Stop();
+                Console.WriteLine("Failed to start server: {0}", e.Message);
             }
         }
 
@@ -41,6 +39,7 @@ namespace Chat.Server
         {
             // Start server
             server.Start();
+            int lastId = 0;
 
             // Enter the listening loop.
             while (true)
@@ -51,37 +50,40 @@ namespace Chat.Server
                 Console.WriteLine("Connected!");
 
                 // Get a stream object for reading and writing
-                NetworkStream stream = client.GetStream();
+                var streamInfo = new NetworkStreamInfo(client.GetStream(), lastId);
+                streams.Add(lastId, streamInfo);
 
-                StartReading(stream);
+                StartReading(streamInfo);
+
+                ++lastId;
             }
         }
 
-        private void AcceptCallback(IAsyncResult result)
+        protected override void OnReadFinished(ReadStateObject readState)
         {
-            TcpClient client = server.EndAcceptTcpClient(result);
-            Console.WriteLine("Connected!");
+            Console.WriteLine("Server received: >{0}<", readState.Data);
 
-            // Get a stream object for reading and writing
-            NetworkStream stream = client.GetStream();
-
-            StartReading(stream);
+            // Sent to all clients
+            var data = readState.Data;
+            foreach (var info in streams.Values)
+            {
+                StartSending(readState.Data, info);
+            }
         }
 
-        protected override void OnReadFinished(string data, NetworkStream stream)
+        protected override void OnReadingFailed(Exception ex, ReadStateObject readState)
         {
-            Console.WriteLine("Server received: {0}", data);
-            StartSending(data, stream);
+            RemoveStreamInfo(readState.StreamInfo.ID);
         }
 
-        protected override void OnReadingFailed(Exception ex, NetworkStream stream, ReadStateObject state)
+        protected override void OnSendingFailed(Exception ex, SendStateObject sendState)
         {
-            throw new NotImplementedException();
+            RemoveStreamInfo(sendState.StreamInfo.ID);
         }
 
-        protected override void OnSendingFailed(Exception ex, NetworkStream stream, SendStateObject state)
+        private void RemoveStreamInfo(int streamInfoId)
         {
-            throw new NotImplementedException();
+            streams.Remove(streamInfoId);
         }
 
         public void Dispose()

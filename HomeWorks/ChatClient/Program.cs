@@ -72,11 +72,10 @@ namespace Chat
             }
 
             // Show client window
-            new ClientWindow().Show();
+            var clientWindow = new ClientWindow();
+            clientWindow.Show(); 
 
-            Application.Run();
-
-            
+            Application.Run();           
         }
     }
 }

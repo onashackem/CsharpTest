@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace ChatClient.Messages
+namespace Chat.Client.Messages
 {
     abstract class MessageBase : IMessage
     {

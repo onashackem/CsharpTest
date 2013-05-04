@@ -1,4 +1,5 @@
-﻿namespace Chat.Client.GUI
+﻿using System.Windows.Forms;
+namespace Chat.Client.GUI
 {
     partial class ClientWindow
     {
@@ -30,18 +31,19 @@
         {
             this.tbxName = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
-            this.lbxChat = new System.Windows.Forms.ListBox();
             this.tbxMessage = new System.Windows.Forms.TextBox();
             this.btnSend = new System.Windows.Forms.Button();
+            this.lbxChat = new System.Windows.Forms.ListBox();
             this.SuspendLayout();
             // 
             // tbxName
             // 
             this.tbxName.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.tbxName.Location = new System.Drawing.Point(57, 10);
+            this.tbxName.Enabled = false;
+            this.tbxName.Location = new System.Drawing.Point(80, 10);
             this.tbxName.Name = "tbxName";
-            this.tbxName.Size = new System.Drawing.Size(215, 20);
+            this.tbxName.Size = new System.Drawing.Size(459, 20);
             this.tbxName.TabIndex = 0;
             // 
             // label1
@@ -49,9 +51,31 @@
             this.label1.AutoSize = true;
             this.label1.Location = new System.Drawing.Point(13, 13);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(38, 13);
+            this.label1.Size = new System.Drawing.Size(61, 13);
             this.label1.TabIndex = 1;
-            this.label1.Text = "Name:";
+            this.label1.Text = "Your name:";
+            // 
+            // tbxMessage
+            // 
+            this.tbxMessage.AcceptsTab = true;
+            this.tbxMessage.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.tbxMessage.Location = new System.Drawing.Point(13, 471);
+            this.tbxMessage.Name = "tbxMessage";
+            this.tbxMessage.Size = new System.Drawing.Size(445, 20);
+            this.tbxMessage.TabIndex = 3;
+            this.tbxMessage.KeyUp += new System.Windows.Forms.KeyEventHandler(this.tbxMessage_KeyUp);
+            // 
+            // btnSend
+            // 
+            this.btnSend.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnSend.Location = new System.Drawing.Point(464, 468);
+            this.btnSend.Name = "btnSend";
+            this.btnSend.Size = new System.Drawing.Size(75, 23);
+            this.btnSend.TabIndex = 4;
+            this.btnSend.Text = "Send";
+            this.btnSend.UseVisualStyleBackColor = true;
+            this.btnSend.Click += new System.EventHandler(this.btnSend_Click);
             // 
             // lbxChat
             // 
@@ -61,33 +85,19 @@
             this.lbxChat.FormattingEnabled = true;
             this.lbxChat.Location = new System.Drawing.Point(16, 36);
             this.lbxChat.Name = "lbxChat";
-            this.lbxChat.Size = new System.Drawing.Size(256, 186);
+            this.lbxChat.Size = new System.Drawing.Size(523, 420);
             this.lbxChat.TabIndex = 2;
-            // 
-            // tbxMessage
-            // 
-            this.tbxMessage.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.tbxMessage.Location = new System.Drawing.Point(13, 230);
-            this.tbxMessage.Name = "tbxMessage";
-            this.tbxMessage.Size = new System.Drawing.Size(178, 20);
-            this.tbxMessage.TabIndex = 3;
-            // 
-            // btnSend
-            // 
-            this.btnSend.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnSend.Location = new System.Drawing.Point(197, 227);
-            this.btnSend.Name = "btnSend";
-            this.btnSend.Size = new System.Drawing.Size(75, 23);
-            this.btnSend.TabIndex = 4;
-            this.btnSend.Text = "Send";
-            this.btnSend.UseVisualStyleBackColor = true;
+            this.lbxChat.HorizontalScrollbar = true;
+            this.lbxChat.DrawItem += new System.Windows.Forms.DrawItemEventHandler(lbxChat_DrawItem);
+            this.lbxChat.MeasureItem += new System.Windows.Forms.MeasureItemEventHandler(lbxChat_MeasureItem);
+            this.lbxChat.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawVariable;
+            
             // 
             // ClientWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(284, 262);
+            this.ClientSize = new System.Drawing.Size(551, 503);
             this.Controls.Add(this.btnSend);
             this.Controls.Add(this.tbxMessage);
             this.Controls.Add(this.lbxChat);
@@ -101,13 +111,27 @@
 
         }
 
+        void lbxChat_MeasureItem(object sender, System.Windows.Forms.MeasureItemEventArgs e)
+        {
+             var g = e.Graphics; 
+
+            // Count dimensions for string
+            var size = g.MeasureString(
+                this.lbxChat.Items[e.Index] as string,
+                this.lbxChat.Font,
+                this.lbxChat.Width - 5 - SystemInformation.VerticalScrollBarWidth);
+            
+            e.ItemHeight = (int)size.Height + 5;
+            e.ItemWidth = (int)size.Width + 5;
+        }
+
         #endregion
 
         private System.Windows.Forms.TextBox tbxName;
         private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.ListBox lbxChat;
         private System.Windows.Forms.TextBox tbxMessage;
         private System.Windows.Forms.Button btnSend;
+        private System.Windows.Forms.ListBox lbxChat;
     }
 }
 
