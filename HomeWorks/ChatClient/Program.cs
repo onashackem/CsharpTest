@@ -49,6 +49,8 @@ namespace Chat
      */
     static class Program
     {
+        private static Server2 server = new Server2();
+
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -66,18 +68,11 @@ namespace Chat
                     MessageBoxIcon.Question, 
                     MessageBoxDefaultButton.Button1))
             {
-                new Chat.Server.Server().StartListening();
-                new Chat.Client.Client().StartClient();
-                //new ClientWindow().Show();
+                server.Run();
             }
-            else
-            {
 
-                new Chat.Server.Server2().Run();
-                new Chat.Client.Client2().Run();
-                new Chat.Client.Client2().Run();
-                //new ClientWindow().Show();
-            }
+            // Show client window
+            new ClientWindow().Show();
 
             Application.Run();
 

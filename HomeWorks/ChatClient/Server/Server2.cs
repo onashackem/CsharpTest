@@ -5,14 +5,16 @@ using System.Text;
 using System.Net.Sockets;
 using System.Net;
 using System.Threading;
+using ChatClient.Core;
 
 namespace Chat.Server
 {
-    class Server2
+    class Server2 : NetworkCommunicator, IDisposable
     {
+        private TcpListener server = null;
+        
         public void Run() 
         {
-            TcpListener server = null;
             try
             {
                 // Set the TcpListener on port 13000.
@@ -22,7 +24,7 @@ namespace Chat.Server
                 // TcpListener server = new TcpListener(port);
                 server = new TcpListener(localAddr, port);
 
-                new Thread(new ThreadStart(() => Listen(server))).Start();
+                new Thread(new ThreadStart(() => Listen())).Start();
             }
             catch (SocketException e)
             {
@@ -35,53 +37,57 @@ namespace Chat.Server
             }
         }
 
-        private static void Listen(TcpListener server)
+        private void Listen()
         {
-            // Buffer for reading data
-            Byte[] bytes = new Byte[256];
-            String data = null;
-
-            // Start listening for client requests.
+            // Start server
             server.Start();
 
             // Enter the listening loop.
             while (true)
             {
-                Console.Write("Waiting for a connection... ");
+                //server.BeginAcceptTcpClient(new AsyncCallback(AcceptCallback), null);
 
-                // Perform a blocking call to accept requests.
-                // You could also user server.AcceptSocket() here.
-                TcpClient client = server.AcceptTcpClient();
+                var client = server.AcceptTcpClient(); 
                 Console.WriteLine("Connected!");
-
-
-                data = null;
 
                 // Get a stream object for reading and writing
                 NetworkStream stream = client.GetStream();
 
-                int i;
-
-                // Loop to receive all the data sent by the client.
-                while ((i = stream.Read(bytes, 0, bytes.Length)) != 0)
-                {
-                    // Translate data bytes to a ASCII string.
-                    data = System.Text.Encoding.UTF8.GetString(bytes, 0, i);
-                    Console.WriteLine("Received: {0}", data);
-
-                    // Process the data sent by the client.
-                    data = data.ToUpper();
-
-                    byte[] msg = System.Text.Encoding.UTF8.GetBytes(data);
-
-                    // Send back a response.
-                    stream.Write(msg, 0, msg.Length);
-                    Console.WriteLine("Sent: {0}", data);
-                }
-
-                // Shutdown and end connection
-                //client.Close();
+                StartReading(stream);
             }
+        }
+
+        private void AcceptCallback(IAsyncResult result)
+        {
+            TcpClient client = server.EndAcceptTcpClient(result);
+            Console.WriteLine("Connected!");
+
+            // Get a stream object for reading and writing
+            NetworkStream stream = client.GetStream();
+
+            StartReading(stream);
+        }
+
+        protected override void OnReadFinished(string data, NetworkStream stream)
+        {
+            Console.WriteLine("Server received: {0}", data);
+            StartSending(data, stream);
+        }
+
+        protected override void OnReadingFailed(Exception ex, NetworkStream stream, ReadStateObject state)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override void OnSendingFailed(Exception ex, NetworkStream stream, SendStateObject state)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Dispose()
+        {
+            if (server != null)
+                server.Stop();
         }
     }
 }
