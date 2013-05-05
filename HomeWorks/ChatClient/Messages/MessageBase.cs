@@ -2,12 +2,20 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Chat.Client.Messages
 {
     abstract class MessageBase : IMessage
     {
-        protected abstract string MessageText { get; set; }
+        protected string MessageText { get; set; }
+
+        protected static Regex MessageRegEx { get; set; }
+
+        public static MessageBase Empty 
+        { 
+            get { return null; }
+        }
 
         /// <summary>
         /// Gets message in proper format - with a newline at the end
@@ -19,5 +27,18 @@ namespace Chat.Client.Messages
             
             return MessageText + (endsWithNewLine ? String.Empty : "\n");
         }
+
+        public IMessage Matches(string data)
+        {
+            var match = MessageRegEx.Match(data);
+            if (match.Success)
+            {
+                return CreateMessage(match);
+            }
+
+            return null;
+        }
+
+        protected abstract IMessage CreateMessage(Match match);
     }
 }

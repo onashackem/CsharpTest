@@ -49,7 +49,7 @@ namespace Chat
      */
     static class Program
     {
-        private static Server2 server = new Server2();
+        private static Server server = new Server();
 
         /// <summary>
         /// The main entry point for the application.
@@ -72,8 +72,8 @@ namespace Chat
             }
 
             // Show client window
-            var clientWindow = new ClientWindow();
-            clientWindow.Show(); 
+            new ClientWindow().Show();
+            new ClientWindow().Show();
 
             Application.Run();           
         }

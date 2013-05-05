@@ -7,15 +7,16 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using Chat.Server;
+using Chat.Client.Messages;
 
 namespace Chat.Client.GUI
 {
     public partial class ClientWindow : Form
     {
-        private readonly Client2 client1 = new Client2() { Name = "C1" };
-        private readonly Client2 client2 = new Client2() { Name = "C2" };
+        private readonly Client client1 = new Client() { Name = "C1" };
+        private readonly Client client2 = new Client() { Name = "C2" };
 
-        private readonly Client2 client = new Client2() { Name = "Client" };
+        private readonly Client client = new Client() { Name = "Client" };
         private string userName = string.Empty;
 
         private readonly List<Brush> brushes = new List<Brush>() {
@@ -67,16 +68,38 @@ namespace Chat.Client.GUI
 
             MessageBox.Show("You can chat now, " + userName + " :)", "OK", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-            Finalize();
+            FinishInitialization();
         }
 
-        private void Finalize()
+        private void FinishInitialization()
         {
             this.Text += " - " + userName;
             this.tbxName.Text = userName;
 
             // React on data received by client
-            client.MessageRecived += new EventHandler<MessageEventArgs>(client_MessageRecived);            
+            client.MessageRecived += new EventHandler<MessageEventArgs>(client_MessageRecived);
+
+            /*
+
+            var ping = PingMessage.Empty.Matches("PING\n");
+            var pong = PongMessage.Empty.Matches("PONG\n");
+            var ack = AckMessage.Empty.Matches("ACK\n");
+
+            var hello = HelloMessage.Empty.Matches("HELLO Nprg038Chat 1.0 1.1\n");
+            var hello2 = HelloMessage.Empty.Matches("HELLO Nprg038Chat \n");
+            
+            var olleh = OllehMessage.Empty.Matches("OLLEH Nprg038Chat 1.0\n");
+            var olleh2 = OllehMessage.Empty.Matches("OLLEH Nprg038Chat 1.0 1.1\n");
+
+            var chat1 = ChatMessage.Empty.Matches("MSG u m\n");
+            var chat2 = ChatMessage.Empty.Matches("MSG u\n");
+            var chat3 = ChatMessage.Empty.Matches("MSG u m1\nm2\n");
+
+            var err1 = ErrorMessage.Empty.Matches("ERROR err\n");
+            */
+            
+
+            
 
             ///* TODO: test
             var c1 = client1.TryConnect("127.0.0.1");

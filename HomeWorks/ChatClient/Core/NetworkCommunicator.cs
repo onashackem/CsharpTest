@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Net.Sockets;
+using Chat.Client.Core;
+using Chat.Client.Messages;
 
 namespace ChatClient.Core
 {
@@ -10,7 +12,9 @@ namespace ChatClient.Core
     {
         public bool Connected { get; protected set; }
 
-        protected abstract void OnReadFinished(ReadStateObject readState);
+        protected MessageParser messageParser = new MessageParser();
+
+        protected abstract void OnReadFinished(IMessage message, ReadStateObject readState);
         protected abstract void OnReadingFailed(Exception ex, ReadStateObject readState);
         protected abstract void OnSendingFailed(Exception ex, SendStateObject sendState);
 
@@ -45,7 +49,8 @@ namespace ChatClient.Core
                 if (state.Data.EndsWith("\n"))
                 {
                     // Let communicator handle itself
-                    OnReadFinished(state);
+                    object message = messageParser.ParseMessage(state.Data);
+                    OnReadFinished(message, state);
 
                     // New reading starts
                     state = new ReadStateObject(state.StreamInfo);

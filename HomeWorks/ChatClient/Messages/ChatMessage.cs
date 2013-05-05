@@ -2,16 +2,39 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Chat.Client.Messages
 {
     class ChatMessage: MessageBase
     {
-        public ChatMessage(string userName, string message)
+        private static MessageBase empty;
+        public static new MessageBase Empty
         {
-            MessageText = String.Format("MSG {0} {1}", userName, message);
+            get { return empty; }
         }
 
-        protected override string MessageText { get; set; }
+        public string Message { get; private set; }
+
+        public string From { get; private set; }
+
+        static ChatMessage()
+        {
+            MessageRegEx = new Regex("^MSG ([^ ]+) ([^\n]+)\n$");
+            empty = new ChatMessage("", "");
+        }
+
+        public ChatMessage(string userName, string message) : base()
+        {
+            From = userName;
+            Message = message;
+
+            MessageText = String.Format("MSG {0} {1}", userName, message);
+        }
+        
+        protected override IMessage CreateMessage(Match match)
+        {
+            return new ChatMessage(match.Groups[1].ToString(), match.Groups[2].ToString());
+        }
     }
 }
