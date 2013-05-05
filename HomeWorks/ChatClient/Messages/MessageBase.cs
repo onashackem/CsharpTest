@@ -10,11 +10,16 @@ namespace Chat.Client.Messages
     {
         protected string MessageText { get; set; }
 
-        protected static Regex MessageRegEx { get; set; }
+        protected Regex MessageRegEx { get; set; }
 
         public static MessageBase Empty 
         { 
             get { return null; }
+        }
+
+        public MessageBase(Regex regex)
+        {
+            MessageRegEx = regex;
         }
 
         /// <summary>
@@ -38,6 +43,8 @@ namespace Chat.Client.Messages
 
             return null;
         }
+
+        public abstract void GetProcessed(Core.ICommunicationProtocol protocol);
 
         protected abstract IMessage CreateMessage(Match match);
     }

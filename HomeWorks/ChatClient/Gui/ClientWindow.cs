@@ -76,47 +76,31 @@ namespace Chat.Client.GUI
             this.Text += " - " + userName;
             this.tbxName.Text = userName;
 
+            client.Name = userName;
+
             // React on data received by client
-            client.MessageRecived += new EventHandler<MessageEventArgs>(client_MessageRecived);
-
-            /*
-
-            var ping = PingMessage.Empty.Matches("PING\n");
-            var pong = PongMessage.Empty.Matches("PONG\n");
-            var ack = AckMessage.Empty.Matches("ACK\n");
-
-            var hello = HelloMessage.Empty.Matches("HELLO Nprg038Chat 1.0 1.1\n");
-            var hello2 = HelloMessage.Empty.Matches("HELLO Nprg038Chat \n");
-            
-            var olleh = OllehMessage.Empty.Matches("OLLEH Nprg038Chat 1.0\n");
-            var olleh2 = OllehMessage.Empty.Matches("OLLEH Nprg038Chat 1.0 1.1\n");
-
-            var chat1 = ChatMessage.Empty.Matches("MSG u m\n");
-            var chat2 = ChatMessage.Empty.Matches("MSG u\n");
-            var chat3 = ChatMessage.Empty.Matches("MSG u m1\nm2\n");
-
-            var err1 = ErrorMessage.Empty.Matches("ERROR err\n");
-            */
-            
-
-            
-
-            ///* TODO: test
-            var c1 = client1.TryConnect("127.0.0.1");
-            var c2 = client2.TryConnect("127.0.0.1");
-
-            client1.SendMessage("C1, M1\n");
-            client2.SendMessage("C2, M1\n");
-            client2.SendMessage("C2, M2\n");
-            client1.SendMessage("C1, M2\n");
-            client2.SendMessage("C2, M3\n");
-            //*/
+            client.ChatMessageReceived += new EventHandler<ChatMessageEventArgs>(client_MessageRecived);
+            client.ErrorMessageReceived += new EventHandler<ErrorMessageEventArgs>(client_ErrorMessageReceived);
         }
 
-        private void client_MessageRecived(object sender, MessageEventArgs e)
+        void client_ErrorMessageReceived(object sender, ErrorMessageEventArgs e)
         {
-            var message = e.Data;
+            var message = String.Format("[{0} | Error message received] {1}\n\n Disconnecting...", DateTime.Now, e.Error);
+            
+            DisplayMessage(message);
 
+            client.Disconnect();
+        }
+
+        private void client_MessageRecived(object sender, ChatMessageEventArgs e)
+        {
+            var message = String.Format("[{0} | {1}] {2}", DateTime.Now, e.User, e.Message);
+
+            DisplayMessage(message);
+        }
+
+        private void DisplayMessage(string message)
+        {
             if (InvokeRequired)
             {
                 Invoke((Action)(() => AddMessage(message)));
@@ -130,7 +114,7 @@ namespace Chat.Client.GUI
         private void AddMessage(string message)
         {
             this.lbxChat.Items.Add(message);
-            this.lbxChat.Refresh();
+            this.lbxChat.SelectedIndex = this.lbxChat.Items.Count - 1;
         }
 
         private void btnSend_Click(object sender, System.EventArgs e)
@@ -142,25 +126,6 @@ namespace Chat.Client.GUI
         {
             if (e.KeyCode == Keys.Enter)
                 SendMessage();
-        }
-
-        private void lbxChat_DrawItem(object sender, System.Windows.Forms.DrawItemEventArgs e)
-        {
-            e.DrawBackground();
-            
-            // Color based on item index
-            Brush myBrush = brushes[e.Index % brushes.Count];
-
-            // Draw the current item text based on the current Font and the custom brush settings. 
-            e.Graphics.DrawString(
-                this.lbxChat.Items[e.Index] as string, 
-                this.lbxChat.Font, 
-                myBrush, 
-                new RectangleF(e.Bounds.X, e.Bounds.Y, e.Bounds.Width, e.Bounds.Height)
-            );
-
-            // If the ListBox has focus, draw a focus rectangle around the selected item. 
-            e.DrawFocusRectangle();
         }
 
         private void SendMessage()
@@ -176,7 +141,7 @@ namespace Chat.Client.GUI
                 return;
 
             // TODO: message
-            client.SendMessage(data + "\n");
+            client.SendMessage(new ChatMessage(userName, data + "\n"));
         }
     }
 }

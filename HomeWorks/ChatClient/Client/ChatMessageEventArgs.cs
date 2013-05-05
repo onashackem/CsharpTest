@@ -5,8 +5,10 @@ using System.Text;
 
 namespace Chat.Client
 {
-    class MessageEventArgs : EventArgs
+    class ChatMessageEventArgs : EventArgs
     {
-        public string Data { get; set; }
+        public string Message { get; set; }
+
+        public string User { get; set; }
     }
 }

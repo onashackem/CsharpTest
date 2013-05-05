@@ -5,6 +5,7 @@ using System.Text;
 using System.Net.Sockets;
 using Chat.Client.Core;
 using Chat.Client.Messages;
+using System.Net;
 
 namespace ChatClient.Core
 {
@@ -18,7 +19,31 @@ namespace ChatClient.Core
         protected abstract void OnReadingFailed(Exception ex, ReadStateObject readState);
         protected abstract void OnSendingFailed(Exception ex, SendStateObject sendState);
 
-        protected void StartReading(NetworkStreamInfo streamInfo)
+        protected IPAddress GetIPAddress(string addressOrHostName)
+        {
+            var hostInfo = Dns.GetHostEntry(addressOrHostName);
+
+            if (hostInfo.AddressList.Count() == 0)
+                return null;
+
+
+            var address = hostInfo.AddressList[0];
+
+            /* TODO: IPv4 to IPv6 mapping
+            if (address.AddressFamily == AddressFamily.InterNetworkV6)
+                return address;
+
+            if (address.AddressFamily == AddressFamily.InterNetwork)
+            {
+                // Try to map to IPv6 address
+                return IPAddress.Parse(String.Format("::FFFF:{0}", address));
+            }
+            */
+
+            return address;
+        }
+
+        protected void StartReading(ClientInfo streamInfo)
         {
             ReadStateObject state = new ReadStateObject(streamInfo);
 
@@ -35,7 +60,7 @@ namespace ChatClient.Core
         protected void ReadCallback(IAsyncResult result)
         {
             var state = (ReadStateObject)result.AsyncState;
-            var stream = state.StreamInfo.Stream;
+            var stream = state.ClientInfo.Stream;
 
             try
             {
@@ -49,11 +74,11 @@ namespace ChatClient.Core
                 if (state.Data.EndsWith("\n"))
                 {
                     // Let communicator handle itself
-                    object message = messageParser.ParseMessage(state.Data);
+                    var message = messageParser.ParseMessage(state.Data);
                     OnReadFinished(message, state);
 
                     // New reading starts
-                    state = new ReadStateObject(state.StreamInfo);
+                    state = new ReadStateObject(state.ClientInfo);
                 }
 
                 // Read next message
@@ -65,12 +90,14 @@ namespace ChatClient.Core
             }
         }
 
-        protected void StartSending(String message, NetworkStreamInfo streamInfo)
+        protected void StartSending(IMessage message, ClientInfo streamInfo)
         {
-            System.Diagnostics.Debug.Assert(message.EndsWith("\n"), "Message has to end with a newline!");
+            var data = message.ToString();
+
+            System.Diagnostics.Debug.Assert(data.EndsWith("\n"), "Message has to end with a newline!");
 
             // Create state object
-            var state = new SendStateObject(streamInfo, message);
+            var state = new SendStateObject(streamInfo, data);
             var buffer = state.Buffer;
 
             try
@@ -87,7 +114,7 @@ namespace ChatClient.Core
         protected void SendCallback(IAsyncResult result)
         {
             var state = (SendStateObject)result.AsyncState;
-            var stream = state.StreamInfo.Stream;
+            var stream = state.ClientInfo.Stream;
 
             stream.EndWrite(result);
         }
@@ -98,9 +125,9 @@ namespace ChatClient.Core
         protected class ReadStateObject
         {
             /// <summary>
-            /// Opened socket
+            /// Opened socket information
             /// </summary>
-            public NetworkStreamInfo StreamInfo { get; private set; }
+            public ClientInfo ClientInfo { get; private set; }
 
             /// <summary>
             /// Size of Buffer
@@ -123,9 +150,9 @@ namespace ChatClient.Core
             // Communication encoding
             private Encoding encoding = Encoding.UTF8;
 
-            public ReadStateObject(NetworkStreamInfo stream)
+            public ReadStateObject(ClientInfo info)
             {
-                StreamInfo = stream;
+                ClientInfo = info;
                 Init();
             }
 
@@ -152,18 +179,18 @@ namespace ChatClient.Core
             private Encoding encoding = Encoding.UTF8;
 
             /// <summary>
-            /// Opened socket
+            /// Opened socket information
             /// </summary>
-            public NetworkStreamInfo StreamInfo { get; private set; }
+            public ClientInfo ClientInfo { get; private set; }
 
             /// <summary>
             /// Gets decoded data to bytes
             /// </summary>
             public byte[] Buffer { get { return encoding.GetBytes(data); } }
 
-            public SendStateObject(NetworkStreamInfo stream, string data)
+            public SendStateObject(ClientInfo info, string data)
             {
-                StreamInfo = stream;
+                ClientInfo = info;
                 this.data = data;
             }
         }
@@ -171,30 +198,39 @@ namespace ChatClient.Core
         /// <summary>
         /// Wrapper around NetworkStream - to remember its last contact
         /// </summary>
-        protected class NetworkStreamInfo
+        protected class ClientInfo
         {
             public NetworkStream Stream { get; private set; }
+
+            public ICommunicationProtocol Protocol { get; set; }
 
             public DateTime LastContact { get; set; }
 
             public int ID { get; private set; }
+
+            public bool Connected { get; set; }
 
             /// <summary>
             /// Constructor for server - to distinguis streams by added id
             /// </summary>
             /// <param name="stream"></param>
             /// <param name="id"></param>
-            public NetworkStreamInfo(NetworkStream stream, int id)
+            public ClientInfo(NetworkStream stream, int id, ICommunicationProtocol protocol)
             {
                 Stream = stream;
                 ID = id;
+                Protocol = protocol;
+                Connected = true;
             }
 
             /// <summary>
             /// Constructor for clients - no id needed
             /// </summary>
             /// <param name="stream"></param>
-            public NetworkStreamInfo(NetworkStream stream) : this (stream, 1) {}
+            public ClientInfo(NetworkStream stream, ICommunicationProtocol protocol) 
+                : this(stream, 1, protocol) 
+            { 
+            }
         }
     }
 }

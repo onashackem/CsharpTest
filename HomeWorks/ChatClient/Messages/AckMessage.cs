@@ -9,6 +9,7 @@ namespace Chat.Client.Messages
     class AckMessage: MessageBase
     {
         private static MessageBase empty;
+
         public static new MessageBase Empty
         {
             get { return empty; }
@@ -16,13 +17,18 @@ namespace Chat.Client.Messages
 
         static AckMessage()
         {
-            MessageRegEx = new Regex("^ACK\n$");
             empty = new AckMessage();
         }
 
-        public AckMessage() : base()
+        public AckMessage()
+            : base(new Regex("^ACK\n$"))
         {
             MessageText = "ACK";
+        }
+
+        public override void GetProcessed(Core.ICommunicationProtocol protocol)
+        {
+            protocol.ProcessMessage(this);
         }
 
         protected override IMessage CreateMessage(Match match)

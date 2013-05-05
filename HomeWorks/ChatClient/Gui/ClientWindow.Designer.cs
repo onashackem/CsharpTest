@@ -1,4 +1,5 @@
 ﻿using System.Windows.Forms;
+using System.Drawing;
 namespace Chat.Client.GUI
 {
     partial class ClientWindow
@@ -123,6 +124,25 @@ namespace Chat.Client.GUI
             
             e.ItemHeight = (int)size.Height + 5;
             e.ItemWidth = (int)size.Width + 5;
+        }
+
+        private void lbxChat_DrawItem(object sender, System.Windows.Forms.DrawItemEventArgs e)
+        {
+            e.DrawBackground();
+
+            // Color based on item index
+            Brush myBrush = brushes[e.Index % brushes.Count];
+
+            // Draw the current item text based on the current Font and the custom brush settings. 
+            e.Graphics.DrawString(
+                this.lbxChat.Items[e.Index] as string,
+                this.lbxChat.Font,
+                myBrush,
+                new RectangleF(e.Bounds.X, e.Bounds.Y, e.Bounds.Width, e.Bounds.Height)
+            );
+
+            // If the ListBox has focus, draw a focus rectangle around the selected item. 
+            //e.DrawFocusRectangle();
         }
 
         #endregion

@@ -14,15 +14,22 @@ namespace Chat.Client.Messages
             get { return empty; }
         }
 
+        protected static new Regex MessageRegEx { get; set; }
+
         static PingMessage()
         {
-            MessageRegEx = new Regex("^PING\n$");
             empty = new PingMessage();
         }
 
-        public PingMessage(): base()
+        public PingMessage()
+            : base(new Regex("^PING\n$"))
         {
             MessageText = "PING";
+        }
+
+        public override void GetProcessed(Core.ICommunicationProtocol protocol)
+        {
+            protocol.ProcessMessage(this);
         }
 
         protected override IMessage CreateMessage(Match match)

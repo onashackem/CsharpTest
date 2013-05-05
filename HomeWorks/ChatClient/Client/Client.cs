@@ -6,38 +6,58 @@ using System.Net.Sockets;
 using ChatClient.Core;
 using System.Net;
 using Chat.Client.Messages;
+using Chat.Client.Core;
+using Chat.Client.Core.Protocol;
+using Chat.Configuration;
 
 namespace Chat.Client
 {
     class Client: NetworkCommunicator, IDisposable
     {
-        TcpClient client = null;
-        NetworkStreamInfo streamInfo = null;
+        protected TcpClient client = null;
+        protected ClientInfo communicationInfo = null;
+
+        public Dictionary<string, ClientProtocol> VersionedProtocols { get; protected set; }
         
         public string Name { get; set; }
 
-        public event EventHandler<MessageEventArgs> MessageRecived;
+        public event EventHandler<ChatMessageEventArgs> ChatMessageReceived;
+        public event EventHandler<ErrorMessageEventArgs> ErrorMessageReceived;
 
-        public bool TryConnect(string hostAddress)
+        public Client()
+        {
+            VersionedProtocols = new Dictionary<string, ClientProtocol>();
+
+            // Protocol handles both versions
+            var protocol = new ClientProtocol(this);
+            VersionedProtocols.Add(Versions.VERSION_1_0, protocol);
+            VersionedProtocols.Add(Versions.VERSION_1_1, protocol);
+        }
+
+        public virtual bool TryConnect(string hostAddress)
         {
             if (Connected)
                 throw new InvalidOperationException("Client is already connected.");
 
             try
             {
-                var hostEntry = Dns.GetHostEntry(hostAddress);
-
-                if (hostEntry.AddressList.Length == 0)
-                    return false;
-
-                IPAddress address = hostEntry.AddressList[0];
                 var port = Configuration.Configuration.ServerPort;
+                var address = GetIPAddress(hostAddress);
+
+                if (address == null)
+                    throw new InvalidOperationException("Invalid IP address: " + hostAddress);
 
                 TcpClient client = new TcpClient(address.AddressFamily);
                 client.Connect(address, port);
-                streamInfo = new NetworkStreamInfo(client.GetStream());
 
-                StartReading(streamInfo);
+                var protocol = VersionedProtocols[Versions.VERSION_1_0];
+
+                // Start with simple base protocol
+                communicationInfo = new ClientInfo(client.GetStream(), protocol);
+
+                StartReading(communicationInfo);
+
+                protocol.IntroduceClient();
 
                 Connected = true;
                 return true;
@@ -50,39 +70,76 @@ namespace Chat.Client
             return false;
         }
 
-        public void SendMessage(IMessage message)
+        public virtual void SendMessage(IMessage message)
         {
-            StartSending(message.ToString(), streamInfo);
+            StartSending(message, communicationInfo);
+            ((ClientProtocol)communicationInfo.Protocol).OnChatMessageSent();
+
             Console.WriteLine("Client {1} sent: >>{0}<<", message, Name);
+        }
+
+        public virtual void ChangeProtocol(string version)
+        {
+            System.Diagnostics.Debug.Assert(VersionedProtocols.ContainsKey(version), "Unavailable version");
+
+            var protocol = VersionedProtocols[version];
+            if (this.communicationInfo.Protocol != protocol)
+                this.communicationInfo.Protocol = protocol;
+
+            this.communicationInfo.Protocol = protocol;
+        }
+
+        public virtual void ProcessChatMessage(ChatMessage message)
+        {
+            if (ChatMessageReceived != null)
+                ChatMessageReceived(this, new ChatMessageEventArgs() { Message = message.Message, User = message.From });
+        }
+
+        public virtual void ProcessErrorMessage(ErrorMessage message)
+        {
+            if (ErrorMessageReceived != null)
+                ErrorMessageReceived(this, new ErrorMessageEventArgs() { Error = message.Error });
+
+            communicationInfo.Stream.Close();
+        }
+
+        public virtual void Disconnect()
+        {
+            try
+            {
+                if (communicationInfo != null && communicationInfo.Stream != null)
+                    communicationInfo.Stream.Close();
+
+                if (client != null)
+                    client.Close();
+            }
+            catch (Exception) { /* Nothing to do */}
         }
 
         protected override void OnReadFinished(IMessage message, ReadStateObject readState)
         {
             Console.WriteLine("Client {1} received >>{0}<<", message, Name);
-            
-            if (MessageRecived != null)
-                MessageRecived(this, new MessageEventArgs() { Data = readState.Data });
+
+            System.Diagnostics.Debug.Assert(readState.ClientInfo == communicationInfo, "Should equal");
+
+            message.GetProcessed(communicationInfo.Protocol);
         }
 
         protected override void OnReadingFailed(Exception ex, ReadStateObject readState)
         {
-            if (streamInfo != null && streamInfo.Stream != null)
-                streamInfo.Stream.Close();            
+            if (communicationInfo != null && communicationInfo.Stream != null)
+                communicationInfo.Stream.Close();            
         }
 
         protected override void OnSendingFailed(Exception ex, SendStateObject sendState)
         {
-            if (streamInfo != null && streamInfo.Stream != null)
-                streamInfo.Stream.Close();
+            if (communicationInfo != null && communicationInfo.Stream != null)
+                communicationInfo.Stream.Close();
         }
 
         public void Dispose()
         {
-            if (streamInfo != null && streamInfo.Stream != null)
-                streamInfo.Stream.Close();
-
-            if (client != null)
-                client.Close();
+            Disconnect();
         }
     }
 }

@@ -46,11 +46,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Client\Client2.cs" />
-    <Compile Include="Client\MessageEventArgs.cs" />
+    <Compile Include="Client\Client.cs" />
+    <Compile Include="Client\ChatMessageEventArgs.cs" />
+    <Compile Include="Client\ErrorMessageEventArgs.cs" />
     <Compile Include="Configuration\Configuration.cs" />
     <Compile Include="Configuration\Versions.cs" />
+    <Compile Include="Core\ICommunicationProtocol.cs" />
+    <Compile Include="Core\MessageParser.cs" />
     <Compile Include="Core\NetworkCommunicator.cs" />
+    <Compile Include="Core\Protocol\ClientProtocol.cs" />
+    <Compile Include="Core\Protocol\ServerProtocol.cs" />
     <Compile Include="Gui\ClientWindow.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -74,7 +79,7 @@
     <Compile Include="Messages\PingMessage.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Server\Server2.cs" />
+    <Compile Include="Server\Server.cs" />
     <EmbeddedResource Include="Gui\ClientWindow.resx">
       <DependentUpon>ClientWindow.cs</DependentUpon>
     </EmbeddedResource>

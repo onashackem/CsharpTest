@@ -4,7 +4,6 @@ using System.Linq;
 using System.Windows.Forms;
 using Chat.Client;
 using Chat.Client.GUI;
-using Chat.Server;
 
 namespace Chat
 {
@@ -49,7 +48,7 @@ namespace Chat
      */
     static class Program
     {
-        private static Server server = new Server();
+        private static Chat.Server.Server server = new Chat.Server.Server();
 
         /// <summary>
         /// The main entry point for the application.
@@ -75,7 +74,7 @@ namespace Chat
             new ClientWindow().Show();
             new ClientWindow().Show();
 
-            Application.Run();           
+            Application.Run();
         }
     }
 }

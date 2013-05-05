@@ -15,29 +15,28 @@ namespace Chat.Client.Messages
             get { return empty; }
         }
 
+        protected static new Regex MessageRegEx { get; set; }
+
         public string[] AvailableVersions { get; private set; }
 
         static HelloMessage()
         {
-            MessageRegEx = new Regex("^HELLO Nprg038Chat ([^\n]+)\n$");
-            empty = new HelloMessage();
+            empty = new HelloMessage("");
         }
 
-        public HelloMessage(params string[] versions)
+        public HelloMessage(string versions)
+            : base(new Regex("^HELLO Nprg038Chat ([^\n]+)\n$"))
         {
-            StringBuilder sb = new StringBuilder();
-
-            foreach (var version in versions)
-            {
-                sb.AppendFormat("{0} ", version);
-            }
-
-            var v = sb.ToString();
             var sep = new char[] { ' ' };
 
-            AvailableVersions = v.Split(sep, StringSplitOptions.RemoveEmptyEntries);
+            AvailableVersions = versions.Split(sep, StringSplitOptions.RemoveEmptyEntries);
 
-            MessageText = String.Format("HELLO Nprg038Chat {0}", v.TrimEnd(sep));
+            MessageText = String.Format("HELLO Nprg038Chat {0}", versions.TrimEnd(sep));
+        }
+
+        public override void GetProcessed(Core.ICommunicationProtocol protocol)
+        {
+            protocol.ProcessMessage(this);
         }
 
         protected override IMessage CreateMessage(Match match)

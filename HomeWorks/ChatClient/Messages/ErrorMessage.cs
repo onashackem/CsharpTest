@@ -14,19 +14,26 @@ namespace Chat.Client.Messages
             get { return empty; }
         }
 
+        protected static new Regex MessageRegEx { get; set; }
+
         public string Error { get; private set; }
 
         static ErrorMessage()
         {
-            MessageRegEx = new Regex("^ERROR ([^\n]+)\n$");
             empty = new ErrorMessage("");
         }
 
-        public ErrorMessage(string message)
+        public ErrorMessage(string message) 
+            : base (new Regex("^ERROR ([^\n]+)\n$"))
         {
             Error = message;
 
             MessageText = String.Format("ERROR {0}", message);
+        }
+
+        public override void GetProcessed(Core.ICommunicationProtocol protocol)
+        {
+            protocol.ProcessMessage(this);
         }
 
         protected override IMessage CreateMessage(Match match)
