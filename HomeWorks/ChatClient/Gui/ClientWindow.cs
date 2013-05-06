@@ -85,7 +85,7 @@ namespace Chat.Client.GUI
 
         void client_ErrorMessageReceived(object sender, ErrorMessageEventArgs e)
         {
-            var message = String.Format("[{0} | Error message received] {1}\n\n Disconnecting...", DateTime.Now, e.Error);
+            var message = String.Format("[{0} | Error message received] {1}\n\n Disconnected. Try relogin.", DateTime.Now, e.Error);
             
             DisplayMessage(message);
 
@@ -132,6 +132,7 @@ namespace Chat.Client.GUI
         {
             var data = this.tbxMessage.Text;
             tbxMessage.Text = string.Empty;
+            tbxMessage.Focus();
 
             // Nothing to send
             if (String.IsNullOrEmpty(data))
@@ -140,7 +141,7 @@ namespace Chat.Client.GUI
             if (!client.Connected)
                 return;
 
-            // TODO: message
+            // Send chat message
             client.SendMessage(new ChatMessage(userName, data + "\n"));
         }
     }

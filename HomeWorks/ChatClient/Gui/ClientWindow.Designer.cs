@@ -53,7 +53,7 @@ namespace Chat.Client.GUI
             this.label1.Location = new System.Drawing.Point(13, 13);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(61, 13);
-            this.label1.TabIndex = 1;
+            this.label1.TabIndex = 4;
             this.label1.Text = "Your name:";
             // 
             // tbxMessage
@@ -64,7 +64,7 @@ namespace Chat.Client.GUI
             this.tbxMessage.Location = new System.Drawing.Point(13, 471);
             this.tbxMessage.Name = "tbxMessage";
             this.tbxMessage.Size = new System.Drawing.Size(445, 20);
-            this.tbxMessage.TabIndex = 3;
+            this.tbxMessage.TabIndex = 2;
             this.tbxMessage.KeyUp += new System.Windows.Forms.KeyEventHandler(this.tbxMessage_KeyUp);
             // 
             // btnSend
@@ -73,7 +73,7 @@ namespace Chat.Client.GUI
             this.btnSend.Location = new System.Drawing.Point(464, 468);
             this.btnSend.Name = "btnSend";
             this.btnSend.Size = new System.Drawing.Size(75, 23);
-            this.btnSend.TabIndex = 4;
+            this.btnSend.TabIndex = 3;
             this.btnSend.Text = "Send";
             this.btnSend.UseVisualStyleBackColor = true;
             this.btnSend.Click += new System.EventHandler(this.btnSend_Click);
@@ -83,16 +83,15 @@ namespace Chat.Client.GUI
             this.lbxChat.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.lbxChat.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawVariable;
             this.lbxChat.FormattingEnabled = true;
+            this.lbxChat.HorizontalScrollbar = true;
             this.lbxChat.Location = new System.Drawing.Point(16, 36);
             this.lbxChat.Name = "lbxChat";
             this.lbxChat.Size = new System.Drawing.Size(523, 420);
-            this.lbxChat.TabIndex = 2;
-            this.lbxChat.HorizontalScrollbar = true;
-            this.lbxChat.DrawItem += new System.Windows.Forms.DrawItemEventHandler(lbxChat_DrawItem);
-            this.lbxChat.MeasureItem += new System.Windows.Forms.MeasureItemEventHandler(lbxChat_MeasureItem);
-            this.lbxChat.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawVariable;
-            
+            this.lbxChat.TabIndex = 1;
+            this.lbxChat.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.lbxChat_DrawItem);
+            this.lbxChat.MeasureItem += new System.Windows.Forms.MeasureItemEventHandler(this.lbxChat_MeasureItem);
             // 
             // ClientWindow
             // 

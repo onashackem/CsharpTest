@@ -12,18 +12,44 @@ using Chat.Configuration;
 
 namespace Chat.Client
 {
+    /// <summary>
+    /// Chat client that communicates with chat server
+    /// </summary>
     class Client: NetworkCommunicator, IDisposable
     {
+        /// <summary>
+        /// TCPClient that handles communication
+        /// </summary>
         protected TcpClient client = null;
+
+        /// <summary>
+        /// Information about connection
+        /// </summary>
         protected ClientInfo communicationInfo = null;
 
+        /// <summary>
+        /// Versionf of chat and protocols that handles the comunication rules
+        /// </summary>
         public Dictionary<string, ClientProtocol> VersionedProtocols { get; protected set; }
         
+        /// <summary>
+        /// Internal name of client
+        /// </summary>
         public string Name { get; set; }
 
+        /// <summary>
+        /// Event raised when client received a chat message from server
+        /// </summary>
         public event EventHandler<ChatMessageEventArgs> ChatMessageReceived;
+
+        /// <summary>
+        /// Event raised when client received an error message from cerver
+        /// </summary>
         public event EventHandler<ErrorMessageEventArgs> ErrorMessageReceived;
 
+        /// <summary>
+        /// Defualt construcotr, inits version dictionary
+        /// </summary>
         public Client()
         {
             VersionedProtocols = new Dictionary<string, ClientProtocol>();
@@ -34,6 +60,11 @@ namespace Chat.Client
             VersionedProtocols.Add(Versions.VERSION_1_1, protocol);
         }
 
+        /// <summary>
+        /// Attempts to connect to server
+        /// </summary>
+        /// <param name="hostAddress">Address or host name of server</param>
+        /// <returns>Returns true if conection succeeded, false otherwise</returns>
         public virtual bool TryConnect(string hostAddress)
         {
             if (Connected)
@@ -43,9 +74,6 @@ namespace Chat.Client
             {
                 var port = Configuration.Configuration.ServerPort;
                 var address = GetIPAddress(hostAddress);
-
-                if (address == null)
-                    throw new InvalidOperationException("Invalid IP address: " + hostAddress);
 
                 TcpClient client = new TcpClient(address.AddressFamily);
                 client.Connect(address, port);
@@ -70,14 +98,22 @@ namespace Chat.Client
             return false;
         }
 
+        /// <summary>
+        /// Sends message to server
+        /// </summary>
+        /// <param name="message"></param>
         public virtual void SendMessage(IMessage message)
         {
             StartSending(message, communicationInfo);
-            ((ClientProtocol)communicationInfo.Protocol).OnChatMessageSent();
+            ((ClientProtocol)communicationInfo.Protocol).OnMessageSent();
 
             Console.WriteLine("Client {1} sent: >>{0}<<", message, Name);
         }
 
+        /// <summary>
+        /// Changes communication protocol based on server choice
+        /// </summary>
+        /// <param name="version"></param>
         public virtual void ChangeProtocol(string version)
         {
             System.Diagnostics.Debug.Assert(VersionedProtocols.ContainsKey(version), "Unavailable version");
@@ -89,12 +125,20 @@ namespace Chat.Client
             this.communicationInfo.Protocol = protocol;
         }
 
+        /// <summary>
+        /// Called when Chat message received
+        /// </summary>
+        /// <param name="message">Chat message</param>
         public virtual void ProcessChatMessage(ChatMessage message)
         {
             if (ChatMessageReceived != null)
                 ChatMessageReceived(this, new ChatMessageEventArgs() { Message = message.Message, User = message.From });
         }
 
+        /// <summary>
+        /// Called when Error message received
+        /// </summary>
+        /// <param name="message">Error message</param>
         public virtual void ProcessErrorMessage(ErrorMessage message)
         {
             if (ErrorMessageReceived != null)
@@ -103,6 +147,9 @@ namespace Chat.Client
             communicationInfo.Stream.Close();
         }
 
+        /// <summary>
+        /// Disconnects open channels
+        /// </summary>
         public virtual void Disconnect()
         {
             try
@@ -116,6 +163,11 @@ namespace Chat.Client
             catch (Exception) { /* Nothing to do */}
         }
 
+        /// <summary>
+        /// Called when a meesage from server is received
+        /// </summary>
+        /// <param name="message">Message from server</param>
+        /// <param name="readState">Read information data</param>
         protected override void OnReadFinished(IMessage message, ReadStateObject readState)
         {
             Console.WriteLine("Client {1} received >>{0}<<", message, Name);
@@ -125,12 +177,22 @@ namespace Chat.Client
             message.GetProcessed(communicationInfo.Protocol);
         }
 
+        /// <summary>
+        /// Called when reading message from server failed
+        /// </summary>
+        /// <param name="ex">Occured exception</param>
+        /// <param name="readState">Read information data</param>
         protected override void OnReadingFailed(Exception ex, ReadStateObject readState)
         {
             if (communicationInfo != null && communicationInfo.Stream != null)
                 communicationInfo.Stream.Close();            
         }
 
+        /// <summary>
+        /// Called when sending data to server failed
+        /// </summary>
+        /// <param name="ex">Occured exception</param>
+        /// <param name="sendState">Send information data</param>
         protected override void OnSendingFailed(Exception ex, SendStateObject sendState)
         {
             if (communicationInfo != null && communicationInfo.Stream != null)

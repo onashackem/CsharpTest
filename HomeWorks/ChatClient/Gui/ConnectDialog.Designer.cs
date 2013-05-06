@@ -54,7 +54,7 @@
             this.btnConnect.MinimumSize = new System.Drawing.Size(75, 23);
             this.btnConnect.Name = "btnConnect";
             this.btnConnect.Size = new System.Drawing.Size(75, 23);
-            this.btnConnect.TabIndex = 2;
+            this.btnConnect.TabIndex = 4;
             this.btnConnect.Text = "Connect";
             this.btnConnect.UseVisualStyleBackColor = true;
             // 
@@ -65,7 +65,8 @@
             this.tbx_Name.Location = new System.Drawing.Point(71, 40);
             this.tbx_Name.Name = "tbx_Name";
             this.tbx_Name.Size = new System.Drawing.Size(200, 20);
-            this.tbx_Name.TabIndex = 1;
+            this.tbx_Name.TabIndex = 0;
+            this.tbx_Name.Focus();
             // 
             // label1
             // 
@@ -73,7 +74,7 @@
             this.label1.Location = new System.Drawing.Point(13, 13);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(45, 13);
-            this.label1.TabIndex = 3;
+            this.label1.TabIndex = 1;
             this.label1.Text = "Address";
             // 
             // label2
@@ -82,11 +83,12 @@
             this.label2.Location = new System.Drawing.Point(13, 40);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(35, 13);
-            this.label2.TabIndex = 4;
+            this.label2.TabIndex = 3;
             this.label2.Text = "Name";
             // 
             // ConnectDialog
             // 
+            this.AcceptButton = this.btnConnect;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(284, 97);

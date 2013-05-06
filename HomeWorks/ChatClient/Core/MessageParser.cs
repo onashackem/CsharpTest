@@ -6,8 +6,14 @@ using Chat.Client.Messages;
 
 namespace Chat.Client.Core
 {
+    /// <summary>
+    /// Parses received messages from strings
+    /// </summary>
     class MessageParser
     {
+        /// <summary>
+        /// Empty messages samples to match from string
+        /// </summary>
         protected List<IMessage> emptyMessages = new List<IMessage>()
         {
             PingMessage.Empty,
@@ -23,6 +29,11 @@ namespace Chat.Client.Core
             ErrorMessage.Empty,
         };
 
+        /// <summary>
+        /// Finds message type that matches received data. If no match found, ErrorMessage is returned.
+        /// </summary>
+        /// <param name="data">Received data</param>
+        /// <returns>Finds parsed message, Error message when not match found</returns>
         public virtual IMessage ParseMessage(string data)
         {
             foreach (var emptyMessage in emptyMessages)

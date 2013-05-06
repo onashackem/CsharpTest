@@ -9,23 +9,32 @@ using System.Net;
 
 namespace ChatClient.Core
 {
+    /// <summary>
+    /// Class that defines basics of network communication - asynchronous data sending and receiving.
+    /// </summary>
     abstract class NetworkCommunicator
     {
+        /// <summary>
+        /// Is communicator conected?
+        /// </summary>
         public bool Connected { get; protected set; }
 
+        /// <summary>
+        /// Parses received messages
+        /// </summary>
         protected MessageParser messageParser = new MessageParser();
 
-        protected abstract void OnReadFinished(IMessage message, ReadStateObject readState);
-        protected abstract void OnReadingFailed(Exception ex, ReadStateObject readState);
-        protected abstract void OnSendingFailed(Exception ex, SendStateObject sendState);
-
+        /// <summary>
+        /// Tries to parse supplied IP address
+        /// </summary>
+        /// <param name="addressOrHostName">IP address or host name</param>
+        /// <returns>Return IPaddress (IPv6 preffered) or throws error when filed to parse</returns>
         protected IPAddress GetIPAddress(string addressOrHostName)
         {
             var hostInfo = Dns.GetHostEntry(addressOrHostName);
 
-            if (hostInfo.AddressList.Count() == 0)
-                return null;
-
+            if (hostInfo.AddressList == null ||hostInfo.AddressList.Count() == 0)
+                throw new InvalidOperationException("Invalid IP address: " + addressOrHostName);
 
             var address = hostInfo.AddressList[0];
 
@@ -43,6 +52,10 @@ namespace ChatClient.Core
             return address;
         }
 
+        /// <summary>
+        /// Starts listening on network stream
+        /// </summary>
+        /// <param name="streamInfo">Info about stream</param>
         protected void StartReading(ClientInfo streamInfo)
         {
             ReadStateObject state = new ReadStateObject(streamInfo);
@@ -57,6 +70,10 @@ namespace ChatClient.Core
             }
         }
 
+        /// <summary>
+        /// Called when reading any mesage from stream finished
+        /// </summary>
+        /// <param name="result">Information about reading</param>
         protected void ReadCallback(IAsyncResult result)
         {
             var state = (ReadStateObject)result.AsyncState;
@@ -90,8 +107,15 @@ namespace ChatClient.Core
             }
         }
 
+        /// <summary>
+        /// Sends message to the stream other side
+        /// </summary>
+        /// <param name="message">Message to send</param>
+        /// <param name="streamInfo">Information about stream</param>
         protected void StartSending(IMessage message, ClientInfo streamInfo)
         {
+            Console.WriteLine("Sending >{0}< to {1}", message, streamInfo.ID);
+
             var data = message.ToString();
 
             System.Diagnostics.Debug.Assert(data.EndsWith("\n"), "Message has to end with a newline!");
@@ -99,6 +123,8 @@ namespace ChatClient.Core
             // Create state object
             var state = new SendStateObject(streamInfo, data);
             var buffer = state.Buffer;
+
+            System.Diagnostics.Debug.Assert(streamInfo.Connected, "Client should be connected to receive messae.");
 
             try
             {
@@ -111,6 +137,10 @@ namespace ChatClient.Core
             }
         }
 
+        /// <summary>
+        /// Called when sending finished
+        /// </summary>
+        /// <param name="result">Sending result</param>
         protected void SendCallback(IAsyncResult result)
         {
             var state = (SendStateObject)result.AsyncState;
@@ -118,6 +148,27 @@ namespace ChatClient.Core
 
             stream.EndWrite(result);
         }
+
+        /// <summary>
+        /// Called when message reading finished
+        /// </summary>
+        /// <param name="message">Received message</param>
+        /// <param name="readState">Information about reading</param>
+        protected abstract void OnReadFinished(IMessage message, ReadStateObject readState);
+
+        /// <summary>
+        /// Called when reading failed
+        /// </summary>
+        /// <param name="ex">Failure reason</param>
+        /// <param name="readState">Information about reading</param>
+        protected abstract void OnReadingFailed(Exception ex, ReadStateObject readState);
+
+        /// <summary>
+        /// Called when sending failed
+        /// </summary>
+        /// <param name="ex">Failure reason</param>
+        /// <param name="sendState">Information about sending</param>
+        protected abstract void OnSendingFailed(Exception ex, SendStateObject sendState);
 
         /// <summary>
         /// Class that is send as ReadCallback async state
@@ -150,12 +201,19 @@ namespace ChatClient.Core
             // Communication encoding
             private Encoding encoding = Encoding.UTF8;
 
+            /// <summary>
+            /// Constructor with client information
+            /// </summary>
+            /// <param name="info">Client information</param>
             public ReadStateObject(ClientInfo info)
             {
                 ClientInfo = info;
                 Init();
             }
 
+            /// <summary>
+            /// Decodes received bytes with respect to encoding
+            /// </summary>
             public void DecodeBuffer()
             {
                 sb.Append(encoding.GetString(Buffer).Replace("\0", ""));
@@ -188,6 +246,11 @@ namespace ChatClient.Core
             /// </summary>
             public byte[] Buffer { get { return encoding.GetBytes(data); } }
 
+            /// <summary>
+            /// Construstor with sending data and client information
+            /// </summary>
+            /// <param name="info">Client information</param>
+            /// <param name="data">Data to send</param>
             public SendStateObject(ClientInfo info, string data)
             {
                 ClientInfo = info;
@@ -200,14 +263,29 @@ namespace ChatClient.Core
         /// </summary>
         protected class ClientInfo
         {
+            /// <summary>
+            /// Network stream for communicaton
+            /// </summary>
             public NetworkStream Stream { get; private set; }
 
+            /// <summary>
+            /// Protocol of communication
+            /// </summary>
             public ICommunicationProtocol Protocol { get; set; }
 
+            /// <summary>
+            /// Last contact from client
+            /// </summary>
             public DateTime LastContact { get; set; }
 
+            /// <summary>
+            /// Client id
+            /// </summary>
             public int ID { get; private set; }
 
+            /// <summary>
+            /// Is client still connected
+            /// </summary>
             public bool Connected { get; set; }
 
             /// <summary>

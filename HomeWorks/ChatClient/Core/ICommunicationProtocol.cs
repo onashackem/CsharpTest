@@ -6,6 +6,9 @@ using Chat.Client.Messages;
 
 namespace Chat.Client.Core
 {
+    /// <summary>
+    /// Interface for both server and client communication protcols
+    /// </summary>
     interface ICommunicationProtocol
     {
         void ProcessMessage(AckMessage message);

@@ -11,26 +11,38 @@ using Chat.Client.Core.Protocol;
 
 namespace Chat.Server
 {
+    /// <summary>
+    /// Handles server side of chat communication
+    /// </summary>
     class Server : NetworkCommunicator, IDisposable
     {
+        /// <summary>
+        /// TcpListener that listens for messages from multiple clients
+        /// </summary>
         private TcpListener server = null;
 
+        /// <summary>
+        /// Clients hashed under their ids
+        /// </summary>
         Dictionary<int, ClientInfo> clients;
 
+        /// <summary>
+        /// Default constructor
+        /// </summary>
         public Server()
         {
             clients = new Dictionary<int, ClientInfo>();
         }
         
+        /// <summary>
+        /// Starts listening on address provided by configuration
+        /// </summary>
         public virtual void Run() 
         {
             try
             {
                 Int32 port = Configuration.Configuration.ServerPort;
                 IPAddress address = GetIPAddress(Configuration.Configuration.ServerIpV4Address);
-
-                if (address == null)
-                    throw new InvalidOperationException("Invalid IP address: " + Configuration.Configuration.ServerIpV4Address);
 
                 // Create server
                 server = new TcpListener(address, port);
@@ -67,6 +79,9 @@ namespace Chat.Server
         /// <param name="message">Message to send to every client</param>
         public virtual void SendMessage(IMessage message)
         {
+            // Remove closed clients from collection
+            clients.Values.ToList().Where(c => !c.Connected).ToList().ForEach(c => clients.Remove(c.ID));
+
             // Sent to all clients
             foreach (var client in clients.Values)
             {
@@ -74,11 +89,14 @@ namespace Chat.Server
             }
         }
 
+        /// <summary>
+        /// Starts infinite loop where waits for clients to connect
+        /// </summary>
         protected virtual void Listen()
         {
             // Start server
             server.Start();
-            int lastId = 0;
+            int lastId = 1;
 
             // Enter the listening loop.
             while (true)
@@ -93,33 +111,65 @@ namespace Chat.Server
 
                 clients.Add(lastId, clientInfo);
 
+                // Starts listening on streem from with client
                 StartReading(clientInfo);
 
                 ++lastId;
             }
         }
 
+        /// <summary>
+        /// When message read
+        /// </summary>
+        /// <param name="message">Message read</param>
+        /// <param name="readState">Info about reading</param>
         protected override void OnReadFinished(IMessage message, ReadStateObject readState)
         {
-            Console.WriteLine("Server received: >{0}<", message);
+            Console.WriteLine("Server received: >{0}< from {1}", message, readState.ClientInfo.ID);
 
             readState.ClientInfo.LastContact = DateTime.Now;
-            message.GetProcessed(readState.ClientInfo.Protocol);            
+            
+            try
+            {
+                message.GetProcessed(readState.ClientInfo.Protocol);
+            }
+            catch (Exception ex)
+            {
+                OnReadingFailed(ex, readState);
+            }
         }
 
+        /// <summary>
+        /// When reading failed - disconnect client
+        /// </summary>
+        /// <param name="ex">Failure reason</param>
+        /// <param name="readState">Info about reading</param>
         protected override void OnReadingFailed(Exception ex, ReadStateObject readState)
         {
             RemoveClientFromReceivers(readState.ClientInfo.ID);
         }
 
+        /// <summary>
+        /// When sending failed - disconnect client
+        /// </summary>
+        /// <param name="ex">Failure reason</param>
+        /// <param name="sendState">Info about sending</param>
         protected override void OnSendingFailed(Exception ex, SendStateObject sendState)
         {
             RemoveClientFromReceivers(sendState.ClientInfo.ID);
         }
 
+        /// <summary>
+        /// Sends message to given client If sending is not allowed, disconnects from client
+        /// </summary>
+        /// <param name="message">Message to send to the client</param>
+        /// <param name="client">Info about client</param>
         protected virtual void SendMessageToClient(IMessage message, ClientInfo client)
         {
-            if (((ServerProtocol)client.Protocol).CanSendMessageToClient(client.LastContact))
+            var canSend = client.Connected 
+                && ((ServerProtocol)client.Protocol).CanSendMessageToClient(client.LastContact);
+ 
+            if (canSend)
             {
                 StartSending(message, client);
             }
@@ -127,8 +177,18 @@ namespace Chat.Server
             {
                 RemoveClientFromReceivers(client.ID);
             }
+
+            // Mark client as disconnected when error message sent
+            if (message is ErrorMessage)
+                client.Connected = false;
         }
 
+        /// <summary>
+        /// Disconnects clients - two phases.
+        /// 1) fist just mark client as disconnected
+        /// 2) remove disconnected clients
+        /// </summary>
+        /// <param name="clientId">Client to disconnect</param>
         protected virtual void RemoveClientFromReceivers(int clientId)
         {
             if (clients.ContainsKey(clientId))
@@ -153,7 +213,6 @@ namespace Chat.Server
 
                     clients.Remove(clientId);
                 }
-                
             }
         }
 
