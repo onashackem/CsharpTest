@@ -48,6 +48,9 @@ namespace Chat
      */
     static class Program
     {
+        /// <summary>
+        /// Server
+        /// </summary>
         private static Chat.Server.Server server = new Chat.Server.Server();
 
         /// <summary>
@@ -67,11 +70,11 @@ namespace Chat
                     MessageBoxIcon.Question, 
                     MessageBoxDefaultButton.Button1))
             {
+                // Run server also
                 server.Run();
             }
 
-            // Show client window
-            new ClientWindow().Show();
+            // Show client anyway
             new ClientWindow().Show();
 
             Application.Run();
