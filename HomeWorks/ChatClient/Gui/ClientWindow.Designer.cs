@@ -45,7 +45,7 @@ namespace Chat.Client.GUI
             this.tbxName.Location = new System.Drawing.Point(80, 10);
             this.tbxName.Name = "tbxName";
             this.tbxName.Size = new System.Drawing.Size(459, 20);
-            this.tbxName.TabIndex = 0;
+            this.tbxName.TabIndex = 3;
             // 
             // label1
             // 
@@ -64,7 +64,7 @@ namespace Chat.Client.GUI
             this.tbxMessage.Location = new System.Drawing.Point(13, 471);
             this.tbxMessage.Name = "tbxMessage";
             this.tbxMessage.Size = new System.Drawing.Size(445, 20);
-            this.tbxMessage.TabIndex = 2;
+            this.tbxMessage.TabIndex = 0;
             this.tbxMessage.KeyUp += new System.Windows.Forms.KeyEventHandler(this.tbxMessage_KeyUp);
             // 
             // btnSend
@@ -73,7 +73,7 @@ namespace Chat.Client.GUI
             this.btnSend.Location = new System.Drawing.Point(464, 468);
             this.btnSend.Name = "btnSend";
             this.btnSend.Size = new System.Drawing.Size(75, 23);
-            this.btnSend.TabIndex = 3;
+            this.btnSend.TabIndex = 1;
             this.btnSend.Text = "Send";
             this.btnSend.UseVisualStyleBackColor = true;
             this.btnSend.Click += new System.EventHandler(this.btnSend_Click);
@@ -89,7 +89,7 @@ namespace Chat.Client.GUI
             this.lbxChat.Location = new System.Drawing.Point(16, 36);
             this.lbxChat.Name = "lbxChat";
             this.lbxChat.Size = new System.Drawing.Size(523, 420);
-            this.lbxChat.TabIndex = 1;
+            this.lbxChat.TabIndex = 2;
             this.lbxChat.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.lbxChat_DrawItem);
             this.lbxChat.MeasureItem += new System.Windows.Forms.MeasureItemEventHandler(this.lbxChat_MeasureItem);
             // 
@@ -108,7 +108,6 @@ namespace Chat.Client.GUI
             this.Load += new System.EventHandler(this.Form1_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
-
         }
 
         void lbxChat_MeasureItem(object sender, System.Windows.Forms.MeasureItemEventArgs e)
@@ -139,9 +138,6 @@ namespace Chat.Client.GUI
                 myBrush,
                 new RectangleF(e.Bounds.X, e.Bounds.Y, e.Bounds.Width, e.Bounds.Height)
             );
-
-            // If the ListBox has focus, draw a focus rectangle around the selected item. 
-            //e.DrawFocusRectangle();
         }
 
         #endregion

@@ -11,29 +11,27 @@ namespace Chat.Client.Messages
     /// </summary>
     class AckMessage: MessageBase
     {
-        private static MessageBase empty;
-
+        private static MessageBase empty = new AckMessage();
+        private static Regex regex = new Regex("^ACK\n$");
+        
         /// <summary>
         /// Template message for matching
         /// </summary>
-        public static new MessageBase Empty
+        public static new IMessage Empty
         {
             get { return empty; }
         }
 
-        /// <summary>
-        /// Creates template message
-        /// </summary>
-        static AckMessage()
+        protected override Regex MessageRegEx
         {
-            empty = new AckMessage();
+            get { return regex; }
         }
 
         /// <summary>
         /// Contructor that defines regex for matching
         /// </summary>
         public AckMessage()
-            : base(new Regex("^ACK\n$"))
+            : base()
         {
             MessageText = "ACK";
         }

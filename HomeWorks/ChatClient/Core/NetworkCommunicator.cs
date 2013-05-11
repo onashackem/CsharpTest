@@ -85,7 +85,7 @@ namespace ChatClient.Core
                 var bytesRead = stream.EndRead(result);
 
                 // Proces read data
-                state.DecodeBuffer();
+                state.ProcessReadData();
 
                 // If whole message read
                 if (state.Data.EndsWith("\n"))
@@ -183,7 +183,7 @@ namespace ChatClient.Core
             /// <summary>
             /// Size of Buffer
             /// </summary>
-            public int BufferSize { get { return 1024; } }
+            public int BufferSize { get { return 100; } }
 
             /// <summary>
             /// Buffer for reading data
@@ -193,10 +193,9 @@ namespace ChatClient.Core
             /// <summary>
             /// Represents the whole data
             /// </summary>
-            public string Data { get { return sb.ToString(); } }
+            public string Data { get { return encoding.GetString(readBytes.ToArray()).Replace("\0", ""); } }
 
-            // Received data string.
-            private StringBuilder sb = new StringBuilder();
+            private readonly List<byte> readBytes;
 
             // Communication encoding
             private Encoding encoding = Encoding.UTF8;
@@ -208,20 +207,16 @@ namespace ChatClient.Core
             public ReadStateObject(ClientInfo info)
             {
                 ClientInfo = info;
-                Init();
+                readBytes = new List<byte>(BufferSize);
+                Buffer = new byte[BufferSize];
             }
 
             /// <summary>
-            /// Decodes received bytes with respect to encoding
+            /// Called after data are read
             /// </summary>
-            public void DecodeBuffer()
+            public void ProcessReadData()
             {
-                sb.Append(encoding.GetString(Buffer).Replace("\0", ""));
-                Init();
-            }
-
-            private void Init()
-            {
+                readBytes.AddRange(Buffer);
                 Buffer = new byte[BufferSize];
             }
         }

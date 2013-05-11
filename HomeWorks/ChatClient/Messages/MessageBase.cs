@@ -16,23 +16,14 @@ namespace Chat.Client.Messages
         /// <summary>
         /// Rege that serves for message parsing
         /// </summary>
-        protected Regex MessageRegEx { get; set; }
+        protected abstract Regex MessageRegEx { get; }
 
         /// <summary>
         /// Empty template, return null.
         /// </summary>
-        public static MessageBase Empty 
+        public static IMessage Empty 
         { 
             get { return null; }
-        }
-
-        /// <summary>
-        /// Contructor with regex for parsing
-        /// </summary>
-        /// <param name="regex"></param>
-        public MessageBase(Regex regex)
-        {
-            MessageRegEx = regex;
         }
 
         /// <summary>

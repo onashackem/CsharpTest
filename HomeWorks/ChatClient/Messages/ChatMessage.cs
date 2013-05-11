@@ -8,14 +8,20 @@ namespace Chat.Client.Messages
 {
     class ChatMessage: MessageBase
     {
-        private static MessageBase empty;
+        private static MessageBase empty = new ChatMessage("", "");
+        private static Regex regex = new Regex("^MSG ([^ ]+) ([^\n]+)\n$");
 
         /// <summary>
         /// Template message for matching
         /// </summary>
-        public static new MessageBase Empty
+        public static new IMessage Empty
         {
             get { return empty; }
+        }
+
+        protected override Regex MessageRegEx
+        {
+            get { return regex; }
         }
 
         /// <summary>
@@ -29,18 +35,10 @@ namespace Chat.Client.Messages
         public string From { get; private set; }
 
         /// <summary>
-        /// Creates template message
-        /// </summary>
-        static ChatMessage()
-        {
-            empty = new ChatMessage("", "");
-        }
-
-        /// <summary>
         /// Contructor with nick and message that defines regex for matching
         /// </summary>
         public ChatMessage(string userName, string message) 
-            : base(new Regex("^MSG ([^ ]+) ([^\n]+)\n$"))
+            : base()
         {
             From = userName;
             Message = message;

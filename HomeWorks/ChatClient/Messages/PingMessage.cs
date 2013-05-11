@@ -8,7 +8,8 @@ namespace Chat.Client.Messages
 {
     class PingMessage: MessageBase
     {
-        private static MessageBase empty;
+        private static MessageBase empty = new PingMessage();
+        private static Regex regex = new Regex("^PING\n$");
 
         /// <summary>
         /// Template message for matching
@@ -18,19 +19,16 @@ namespace Chat.Client.Messages
             get { return empty; }
         }
 
-        /// <summary>
-        /// Creates template message
-        /// </summary>
-        static PingMessage()
+        protected override Regex MessageRegEx
         {
-            empty = new PingMessage();
+            get { return regex; }
         }
 
         /// <summary>
         /// Contructor that defines regex for matching
         /// </summary>
         public PingMessage()
-            : base(new Regex("^PING\n$"))
+            : base()
         {
             MessageText = "PING";
         }

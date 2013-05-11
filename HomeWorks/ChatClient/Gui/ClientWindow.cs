@@ -20,11 +20,13 @@ namespace Chat.Client.GUI
         private string userName = string.Empty;
 
         private readonly List<Brush> brushes = new List<Brush>() {
-            Brushes.Red,
-            Brushes.Green,            
-            Brushes.Orange,
-            Brushes.Blue,
-            Brushes.Yellow
+            Brushes.DarkViolet,            
+            Brushes.DarkSlateGray,
+            Brushes.DarkGoldenrod,
+            Brushes.DarkOrange,
+            Brushes.DarkOliveGreen,
+            Brushes.DarkRed,
+            Brushes.DarkBlue
         };
 
         public ClientWindow()
@@ -47,19 +49,20 @@ namespace Chat.Client.GUI
             {
                 if (DialogResult.OK == connectDialog.ShowDialog())
                 {
+                    var name = connectDialog.GetName();
+                    isNameValid = !String.IsNullOrEmpty(name) && !name.Contains(" ");
+
+                    if (!isNameValid)
+                    {
+                        MessageBox.Show("You have to choose some nick without spaces.", "Invalid name", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        continue;
+                    }
+
                     if (!client.TryConnect(connectDialog.GetAddress()))
                     {
                         MessageBox.Show("Couldn't connect.", "Invalis address", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         continue;
                     }
-                }
-
-                var name = connectDialog.GetName();
-                isNameValid = !String.IsNullOrEmpty(name) && !name.Contains(" ");
-
-                if (!isNameValid)
-                {
-                    MessageBox.Show("You have to choose some nick without spaces.", "Invalid name", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
 
@@ -75,6 +78,7 @@ namespace Chat.Client.GUI
         {
             this.Text += " - " + userName;
             this.tbxName.Text = userName;
+            tbxMessage.Focus();
 
             client.Name = userName;
 

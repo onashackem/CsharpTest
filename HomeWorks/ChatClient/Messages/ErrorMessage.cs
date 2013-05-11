@@ -8,34 +8,32 @@ namespace Chat.Client.Messages
 {
     class ErrorMessage: MessageBase
     {
-        private static MessageBase empty;
+        private static MessageBase empty = new ErrorMessage("");
+        private static Regex regex = new Regex("^ERROR ([^\n]+)\n$");
 
         /// <summary>
         /// Template message for matching
         /// </summary>
-        public static new MessageBase Empty
+        public static new IMessage Empty
         {
             get { return empty; }
+        }
+
+        protected override Regex MessageRegEx
+        {
+            get { return regex; }
         }
 
         /// <summary>
         /// Error that occured
         /// </summary>
         public string Error { get; private set; }
-        
-        /// <summary>
-        /// Creates template message
-        /// </summary>
-        static ErrorMessage()
-        {
-            empty = new ErrorMessage("");
-        }
 
         /// <summary>
         /// Contructor with error text that defines regex for matching
         /// </summary>
         public ErrorMessage(string message) 
-            : base (new Regex("^ERROR ([^\n]+)\n$"))
+            : base ()
         {
             Error = message;
 

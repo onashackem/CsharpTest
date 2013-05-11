@@ -8,7 +8,8 @@ namespace Chat.Client.Messages
 {
     class PongMessage: MessageBase
     {
-        private static MessageBase empty;
+        private static MessageBase empty = new PongMessage();
+        private static Regex regex = new Regex("^PONG\n$");
 
         /// <summary>
         /// Template message for matching
@@ -18,19 +19,16 @@ namespace Chat.Client.Messages
             get { return empty; }
         }
 
-        /// <summary>
-        /// Creates template message
-        /// </summary>
-        static PongMessage()
+        protected override Regex MessageRegEx
         {
-            empty = new PongMessage();
+            get { return regex; }
         }
 
         /// <summary>
         /// Contructor that defines regex for matching
         /// </summary>
         public PongMessage()
-            : base(new Regex("^PONG\n$"))
+            : base()
         {
             MessageText = "PONG";
         }

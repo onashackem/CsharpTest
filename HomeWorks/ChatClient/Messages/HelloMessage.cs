@@ -9,14 +9,20 @@ namespace Chat.Client.Messages
 {
     class HelloMessage : MessageBase
     {
-        private static MessageBase empty;
+        private static MessageBase empty = new HelloMessage("");
+        private static Regex regex = new Regex("^HELLO Nprg038Chat ([^\n]+)\n$");
 
         /// <summary>
         /// Template message for matching
         /// </summary>
-        public static new MessageBase Empty
+        public static new IMessage Empty
         {
             get { return empty; }
+        }
+
+        protected override Regex MessageRegEx
+        {
+            get { return regex; }
         }
 
         /// <summary>
@@ -25,17 +31,10 @@ namespace Chat.Client.Messages
         public string[] AvailableVersions { get; private set; }
 
         /// <summary>
-        /// Creates template message
-        /// </summary>
-        static HelloMessage()
-        {
-            empty = new HelloMessage("");
-        }
-        /// <summary>
         /// Contructor with offered versions that defines regex for matching
         /// </summary>
         public HelloMessage(string versions)
-            : base(new Regex("^HELLO Nprg038Chat ([^\n]+)\n$"))
+            : base()
         {
             var sep = new char[] { ' ' };
 

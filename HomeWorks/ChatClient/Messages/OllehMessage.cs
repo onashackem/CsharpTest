@@ -9,7 +9,8 @@ namespace Chat.Client.Messages
 {
     class OllehMessage: MessageBase
     {
-        private static MessageBase empty;
+        private static MessageBase empty = new OllehMessage("");
+        private static Regex regex = new Regex("^OLLEH Nprg038Chat ([^\n]+)\n$");
 
         /// <summary>
         /// Template message for matching
@@ -19,24 +20,21 @@ namespace Chat.Client.Messages
             get { return empty; }
         }
 
+        protected override Regex MessageRegEx
+        {
+            get { return regex; }
+        }
+
         /// <summary>
         /// Aggreed version by server
         /// </summary>
         public string Version { get; private set; }
 
         /// <summary>
-        /// Creates template message
-        /// </summary>
-        static OllehMessage()
-        {
-            empty = new OllehMessage("");
-        }
-
-        /// <summary>
         /// Contructor with agreed version that defines regex for matching
         /// </summary>
         public OllehMessage(string version)
-            : base(new Regex("^OLLEH Nprg038Chat ([^\n]+)\n$"))
+            : base()
         {
             StringBuilder sb = new StringBuilder();
 

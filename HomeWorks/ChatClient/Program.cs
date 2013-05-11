@@ -49,7 +49,7 @@ namespace Chat
     static class Program
     {
         /// <summary>
-        /// Server
+        /// Server for chat
         /// </summary>
         private static Chat.Server.Server server = new Chat.Server.Server();
 
